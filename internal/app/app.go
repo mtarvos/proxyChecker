@@ -3,6 +3,7 @@ package app
 import (
 	"log/slog"
 	"net/http"
+	"os"
 	"proxyChecker/internal/adapters/external"
 	"proxyChecker/internal/adapters/repository/sqlite"
 	"proxyChecker/internal/config"
@@ -16,6 +17,14 @@ func Run(log *slog.Logger, cfg *config.Config) {
 	storage, err := sqlite.New(cfg.StoragePath, log)
 	if err != nil {
 		log.Error("Failed to init storage", "error", err.Error())
+		os.Exit(1)
+		return
+	}
+
+	err = storage.MigrationsUP()
+	if err != nil {
+		log.Error("Failed to set migrations", "error", err.Error())
+		os.Exit(1)
 	}
 
 	proxyProvider := external.NewProxyApiClient(log)

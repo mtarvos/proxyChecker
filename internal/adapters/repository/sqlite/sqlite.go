@@ -9,11 +9,6 @@ import (
 	"proxyChecker/internal/entity"
 )
 
-type Storage struct {
-	db  *sql.DB
-	log *slog.Logger
-}
-
 func New(storagePath string, log *slog.Logger) (*Storage, error) {
 	const fn = "sqlite.New"
 
@@ -22,29 +17,14 @@ func New(storagePath string, log *slog.Logger) (*Storage, error) {
 		return nil, fmt.Errorf("%s opening sqlite db: %w", fn, err)
 	}
 
-	_, err = db.Exec(`
-	CREATE TABLE IF NOT EXISTS proxy(
-	    id INTEGER PRIMARY KEY,
-	    proxy TEXT NOT NULL,
-	    port INTEGER NOT NULL,
-	    country TEXT,
-	    ISP TEXT,
-	    timezone INTEGER,
-	    alive INTEGER CHECK(alive IN (0, 1)),
-	    status INTEGER CHECK(status IN (0, 1))
-	    );
-		CREATE UNIQUE INDEX IF NOT EXISTS idx_unique_ip_port ON proxy(proxy, port);
-		CREATE INDEX IF NOT EXISTS idx_proxy ON proxy(proxy);
-		CREATE INDEX IF NOT EXISTS idx_country ON proxy(country);
-		CREATE INDEX IF NOT EXISTS idx_ISP ON proxy(ISP);
-		CREATE INDEX IF NOT EXISTS idx_alive ON proxy(alive);
-		CREATE INDEX IF NOT EXISTS idx_status ON proxy(status);
-	`)
+	storage := &Storage{db: db, log: log}
+
+	err = storage.MigrationsUP()
 	if err != nil {
-		return nil, fmt.Errorf("%s create table: %e", fn, err)
+		return nil, fmt.Errorf("%s MigrationsUP failed: %e", fn, err)
 	}
 
-	return &Storage{db: db, log: log}, nil
+	return storage, nil
 }
 
 func (s *Storage) Get(filter entity.Filters) ([]entity.ProxyItem, error) {
@@ -144,8 +124,6 @@ func (s *Storage) GetDistinctField(fieldName string, filter entity.Filters) ([]s
 }
 
 func setWhereByFilter(queryBuilder squirrel.SelectBuilder, filter entity.Filters) squirrel.SelectBuilder {
-	const fn = "setWhereByFilter"
-
 	if filter.AliveOnly != nil {
 		alive := 0
 		if *filter.AliveOnly {
