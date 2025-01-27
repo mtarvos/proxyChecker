@@ -60,7 +60,7 @@ func prepareProxyList(text string) ([]entity.ProxyItem, error) {
 			return nil, fmt.Errorf("error convert port to string", fn, err.Error())
 		}
 
-		proxyList = append(proxyList, entity.ProxyItem{Ip: ip, Port: iPort})
+		proxyList = append(proxyList, entity.ProxyItem{IP: ip, Port: iPort})
 	}
 
 	return proxyList, nil

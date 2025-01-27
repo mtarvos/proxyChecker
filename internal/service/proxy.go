@@ -9,7 +9,7 @@ type ProxyService struct {
 }
 
 type proxyRepository interface {
-	Get(filter entity.Filters) ([]entity.ProxyItem, error)
+	GetProxy(filter entity.Filters) ([]entity.ProxyItem, error)
 }
 
 func NewProxy(storage proxyRepository) *ProxyService {
@@ -17,5 +17,5 @@ func NewProxy(storage proxyRepository) *ProxyService {
 }
 
 func (p *ProxyService) GetProxyList(filter entity.Filters) ([]entity.ProxyItem, error) {
-	return p.proxyRepo.Get(filter)
+	return p.proxyRepo.GetProxy(filter)
 }

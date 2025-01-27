@@ -1,76 +1,103 @@
 package service
 
-import "proxyChecker/internal/entity"
+import (
+	"log/slog"
+	"proxyChecker/internal/entity"
+	"sync"
+	"time"
+)
 
-type GeoData struct {
-	IPAddress          string     `json:"ip_address"`
-	City               string     `json:"city"`
-	CityGeonameID      int        `json:"city_geoname_id"`
-	Region             string     `json:"region"`
-	RegionISOCode      string     `json:"region_iso_code"`
-	RegionGeonameID    int        `json:"region_geoname_id"`
-	PostalCode         string     `json:"postal_code"`
-	Country            string     `json:"country"`
-	CountryCode        string     `json:"country_code"`
-	CountryGeonameID   int        `json:"country_geoname_id"`
-	CountryIsEU        bool       `json:"country_is_eu"`
-	Continent          string     `json:"continent"`
-	ContinentCode      string     `json:"continent_code"`
-	ContinentGeonameID int        `json:"continent_geoname_id"`
-	Longitude          float64    `json:"longitude"`
-	Latitude           float64    `json:"latitude"`
-	Security           Security   `json:"security"`
-	Timezone           Timezone   `json:"timezone"`
-	Flag               Flag       `json:"flag"`
-	Currency           Currency   `json:"currency"`
-	Connection         Connection `json:"connection"`
-}
-
-type Security struct {
-	IsVPN bool `json:"is_vpn"`
-}
-
-type Timezone struct {
-	Name         string `json:"name"`
-	Abbreviation string `json:"abbreviation"`
-	GMTOffset    int    `json:"gmt_offset"`
-	CurrentTime  string `json:"current_time"`
-	IsDST        bool   `json:"is_dst"`
-}
-
-type Flag struct {
-	Emoji   string `json:"emoji"`
-	Unicode string `json:"unicode"`
-	PNG     string `json:"png"`
-	SVG     string `json:"svg"`
-}
-
-type Currency struct {
-	CurrencyName string `json:"currency_name"`
-	CurrencyCode string `json:"currency_code"`
-}
-
-type Connection struct {
-	AutonomousSystemNumber       int     `json:"autonomous_system_number"`
-	AutonomousSystemOrganization string  `json:"autonomous_system_organization"`
-	ConnectionType               *string `json:"connection_type"`
-	ISPName                      *string `json:"isp_name"`
-	OrganizationName             *string `json:"organization_name"`
-}
-
-type infoService struct {
+type InfoService struct {
 	infoProvider InfoProvider
-	infoSaver    InfoSaver
+	infoRep      InfoRep
+	log          *slog.Logger
 }
 
 type InfoProvider interface {
-	GetInfo() (entity.IPInfo, error)
+	GetInfo(ip string) (entity.IPInfo, error)
 }
 
-type InfoSaver interface {
-	ProxyUpdate([]entity.ProxyItem) error
+type InfoRep interface {
+	UpdateProxyInfo(entity.IPInfo) error
+	GetProxyListForInfo() ([]entity.ProxyItem, error)
 }
 
-func newInfoService(infoProvider InfoProvider, infoSaver InfoSaver) *infoService {
-	return &infoService{infoProvider: infoProvider, infoSaver: infoSaver}
+func NewInfoService(log *slog.Logger, infoProvider InfoProvider, infoRep InfoRep) *InfoService {
+	return &InfoService{log: log, infoProvider: infoProvider, infoRep: infoRep}
+}
+
+func (i *InfoService) StartInfoRoutine(routineCount int) {
+	var wg sync.WaitGroup
+
+	forInfo := make(chan string)
+	forUpdateInfo := make(chan entity.IPInfo)
+
+	wg.Add(2)
+	go i.updateProxyInfo(forUpdateInfo, &wg)
+	go i.fetcherProxyRoutine(forInfo, &wg)
+
+	for q := 0; q < routineCount; q++ {
+		wg.Add(1)
+		go i.infoRoutine(forInfo, forUpdateInfo, &wg)
+	}
+
+	wg.Wait()
+}
+
+func (i *InfoService) infoRoutine(forInfo <-chan string, forUpdateInfo chan<- entity.IPInfo, wg *sync.WaitGroup) {
+	defer wg.Done()
+
+	const fn = "InfoService.infoRoutine"
+
+	for ip := range forInfo {
+		info, err := i.infoProvider.GetInfo(ip)
+		if err != nil {
+			i.log.Error(
+				"can not get info",
+				slog.String("fn", fn),
+				slog.String("error", err.Error()),
+				slog.String("ip", ip),
+			)
+			continue
+		}
+
+		forUpdateInfo <- info
+	}
+}
+
+func (i *InfoService) updateProxyInfo(forUpdateInfo <-chan entity.IPInfo, wg *sync.WaitGroup) {
+	defer wg.Done()
+
+	const fn = "InfoService.updateProxyInfo"
+
+	for ipInfo := range forUpdateInfo {
+		if err := i.infoRep.UpdateProxyInfo(ipInfo); err != nil {
+			i.log.Error("can not update info for ip", slog.String("ip", ipInfo.IP), slog.String("fn", fn), slog.String("error", err.Error()))
+		}
+	}
+
+}
+
+func (i *InfoService) fetcherProxyRoutine(forInfo chan<- string, wg *sync.WaitGroup) {
+	defer wg.Done()
+
+	const fn = "InfoService.fetcherProxyRoutine"
+
+	ticker := time.NewTicker(time.Minute)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-ticker.C:
+			proxyList, err := i.infoRep.GetProxyListForInfo()
+			if err != nil {
+				i.log.Error("can not get proxy list for get info", slog.String("fn", fn), slog.String("error", err.Error()))
+				continue
+			}
+
+			for _, item := range proxyList {
+				forInfo <- item.OutIP
+			}
+		}
+	}
 }

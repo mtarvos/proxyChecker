@@ -1,25 +1,41 @@
 package entity
 
 type ProxyItem struct {
-	Ip       string
+	ID       int64
+	IP       string
 	Port     int
 	OutIP    string
 	Country  string
+	City     string
 	ISP      string
 	Timezone int
 	Alive    int
-	Status   int
 }
+
+const (
+	Eq = "equal"
+	Ne = "not_equal"
+)
+
+type Operand string
 
 type Filters struct {
 	AliveOnly *bool
-	Country   string
-	ISP       string
+	Country   *StringFilter
+	City      *StringFilter
+	ISP       *StringFilter
+	OutIP     *StringFilter
+}
+
+type StringFilter struct {
+	Val interface{}
+	Op  Operand
 }
 
 type IPInfo struct {
-	Ip       string
+	IP       string
 	Country  string
+	City     string
 	ISP      string
 	Timezone int
 }

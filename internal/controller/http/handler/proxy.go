@@ -59,7 +59,11 @@ func parseQueryParamsToFilter(r *http.Request) (entity.Filters, error) {
 		bAlive = &val
 	}
 
-	return entity.Filters{AliveOnly: bAlive, Country: country, ISP: isp}, nil
+	return entity.Filters{
+		AliveOnly: bAlive,
+		Country:   helpers.Cf(country, entity.Eq),
+		ISP:       helpers.Cf(isp, entity.Eq),
+	}, nil
 }
 
 func prepareProxyResult(proxyList []entity.ProxyItem) string {
@@ -69,7 +73,7 @@ func prepareProxyResult(proxyList []entity.ProxyItem) string {
 
 	var builder strings.Builder
 	for _, proxy := range proxyList {
-		builder.WriteString(fmt.Sprintf("%s:%d; %s; %s\n", proxy.Ip, proxy.Port, proxy.Country, proxy.ISP))
+		builder.WriteString(fmt.Sprintf("%s:%d; %s; %s\n", proxy.IP, proxy.Port, proxy.Country, proxy.ISP))
 	}
 
 	return builder.String()

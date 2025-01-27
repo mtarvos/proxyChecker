@@ -15,7 +15,7 @@ type CheckerApiClient struct {
 	proxyType  entity.Status
 }
 
-func NewAbstractApiClient(log *slog.Logger, checkerURL string, proxyType entity.Status) *CheckerApiClient {
+func NewCheckerApiClient(log *slog.Logger, checkerURL string, proxyType entity.Status) *CheckerApiClient {
 	return &CheckerApiClient{log: log, checkerURL: checkerURL, proxyType: proxyType}
 }
 

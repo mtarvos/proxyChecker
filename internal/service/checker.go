@@ -30,7 +30,7 @@ type CheckerClient interface {
 
 type ProxyStorage interface {
 	SetAlive(proxy string, port int, ip string, alive bool) error
-	Get(filter entity.Filters) ([]entity.ProxyItem, error)
+	GetProxy(filter entity.Filters) ([]entity.ProxyItem, error)
 }
 
 func NewCheckerService(log *slog.Logger, storage ProxyStorage, checkerClient CheckerClient) *CheckerService {
@@ -109,14 +109,14 @@ func (c *CheckerService) fetcherProxyRoutine(toCheckerRoutine chan<- ProxyAddr, 
 	for {
 		select {
 		case <-ticker.C:
-			proxyList, err := c.storage.Get(entity.Filters{})
+			proxyList, err := c.storage.GetProxy(entity.Filters{})
 			if err != nil {
 				c.log.Error("can not get proxy list for checking", slog.String("fn", fn), slog.String("error", err.Error()))
 				continue
 			}
 
 			for _, item := range proxyList {
-				toCheckerRoutine <- ProxyAddr{proxyIP: item.Ip, proxyPORT: item.Port}
+				toCheckerRoutine <- ProxyAddr{proxyIP: item.IP, proxyPORT: item.Port}
 			}
 		}
 	}

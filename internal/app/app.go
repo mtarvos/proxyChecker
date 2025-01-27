@@ -27,17 +27,21 @@ func Run(log *slog.Logger, cfg *config.Config) {
 		os.Exit(1)
 	}
 
-	checkerClient := external.NewAbstractApiClient(log, cfg.ProxyCheckerURL, cfg.ProxyType)
+	proxyProvider := external.NewProxyApiClient(log)
+	updater := service.NewUpdaterService(log, cfg.ProxyUpdateURL, proxyProvider, storage)
+	updater.StartUpdateProxyRoutine()
+
+	statsService := service.NewStatsService(log, storage)
+
+	checkerClient := external.NewCheckerApiClient(log, cfg.CheckerURL, cfg.ProxyType)
 	checkService := service.NewCheckerService(log, storage, checkerClient)
 	go checkService.StartCheckerRoutine(cfg.CheckRoutineCount)
 
-	proxyProvider := external.NewProxyApiClient(log)
-	updater := service.NewUpdaterService(log, cfg.ProxyUpdateURL, proxyProvider, storage)
-	updater.StartUpdateProxyThread()
+	infoClient := external.NewAbstractAPIClient(log, cfg.InfoURL, cfg.Key)
+	infoService := service.NewInfoService(log, infoClient, storage)
+	infoService.StartInfoRoutine(cfg.InfoRoutineCount)
 
-	statsService := service.NewStatsService(log, storage)
 	proxyService := service.NewProxy(storage)
-
 	handler := handler.NewHandler(log, proxyService, statsService)
 
 	r := router.New(handler)

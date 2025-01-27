@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log/slog"
 	"proxyChecker/internal/entity"
+	"proxyChecker/internal/lib/helpers"
 )
 
 type StatsService struct {
@@ -48,7 +49,10 @@ func (s *StatsService) GetStats() (entity.StatsData, error) {
 	for _, country := range uniqCountry {
 		var item entity.CountryStatsItem
 		item.Country = country
-		item.Count, err = s.provider.GetCountByFilter(entity.Filters{Country: country})
+		item.Count, err = s.provider.GetCountByFilter(
+			entity.Filters{Country: helpers.Cf(country, entity.Eq)},
+		)
+
 		statsData.CountryStats = append(statsData.CountryStats, item)
 	}
 
@@ -61,7 +65,9 @@ func (s *StatsService) GetStats() (entity.StatsData, error) {
 	for _, isp := range uniqISP {
 		var item entity.ISPStatsItem
 		item.ISP = isp
-		item.Count, err = s.provider.GetCountByFilter(entity.Filters{Country: isp})
+		item.Count, err = s.provider.GetCountByFilter(
+			entity.Filters{Country: helpers.Cf(isp, entity.Eq)},
+		)
 		statsData.ISPStats = append(statsData.ISPStats, item)
 	}
 	return statsData, nil

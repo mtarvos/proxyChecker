@@ -31,8 +31,8 @@ func NewUpdaterService(log *slog.Logger, url string, provider ProxyProvider, sav
 	}
 }
 
-func (u *UpdaterService) StartUpdateProxyThread() {
-	const fn = "proxy.StartUpdateProxyThread"
+func (u *UpdaterService) StartUpdateProxyRoutine() {
+	const fn = "proxy.StartUpdateProxyRoutine"
 
 	u.log.Debug("call", slog.String("func", fn))
 
