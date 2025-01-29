@@ -4,8 +4,8 @@ import (
 	"log/slog"
 	"net/http"
 	"os"
-	"proxyChecker/internal/adapters/external"
-	"proxyChecker/internal/adapters/repository/sqlite"
+	"proxyChecker/internal/adapter/external"
+	"proxyChecker/internal/adapter/repository/sqlite"
 	"proxyChecker/internal/config"
 	"proxyChecker/internal/controller/http"
 	"proxyChecker/internal/controller/http/handler"
@@ -26,6 +26,10 @@ func Run(log *slog.Logger, cfg *config.Config) {
 		log.Error("Failed to set migrations", "error", err.Error())
 		os.Exit(1)
 	}
+
+	checkerClient := external.NewAbstractApiClient(log, cfg.ProxyCheckerURL, cfg.ProxyType)
+	checkService := service.NewCheckerService(log, storage, checkerClient)
+	go checkService.StartCheckerRoutine(cfg.CheckRoutineCount)
 
 	proxyProvider := external.NewProxyApiClient(log)
 	updater := service.NewUpdaterService(log, cfg.ProxyUpdateURL, proxyProvider, storage)

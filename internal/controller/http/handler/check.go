@@ -3,23 +3,18 @@ package handler
 import (
 	"fmt"
 	"net/http"
+	"proxyChecker/internal/entity"
 	"proxyChecker/internal/lib/helpers"
 	"strings"
 )
 
 const (
-	statusProxy    = "PROXY"
-	statusNonProxy = "NON_PROXY"
+	statusElite        = "ELITE"
+	statusNonAnonymous = "TRANSPARENT"
 )
 
-type ResponseProxyInfo struct {
-	IP     string `json:"ip"`
-	Status string `json:"status"`
-	Info   string `json:"info"`
-}
-
-func proxyCheckerResponse(ip string, info string, status string) ResponseProxyInfo {
-	return ResponseProxyInfo{Status: status, Info: info, IP: ip}
+func proxyCheckerResponse(ip string, info string, status string) entity.ProxyCheckerResponse {
+	return entity.ProxyCheckerResponse{Status: status, Info: info, IP: ip}
 }
 
 func (p *Handler) Check() http.HandlerFunc {
@@ -30,11 +25,11 @@ func (p *Handler) Check() http.HandlerFunc {
 
 		err := isProxyHeader(r.Header)
 		if err != nil {
-			helpers.JSON(w, proxyCheckerResponse(ip, err.Error(), statusProxy), http.StatusBadRequest)
+			helpers.JSON(w, proxyCheckerResponse(ip, err.Error(), statusNonAnonymous), http.StatusBadRequest)
 			return
 		}
 
-		helpers.JSON(w, proxyCheckerResponse(ip, "", statusNonProxy), http.StatusOK)
+		helpers.JSON(w, proxyCheckerResponse(ip, "", statusElite), http.StatusOK)
 		return
 	}
 }

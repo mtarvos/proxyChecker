@@ -4,14 +4,18 @@ import (
 	"github.com/ilyakaznacheev/cleanenv"
 	"log"
 	"os"
+	"proxyChecker/internal/entity"
 	"time"
 )
 
 type Config struct {
-	Env            string `yaml:"env" env-default:"local"`
-	StoragePath    string `yaml:"storage_path" env-required:"true"`
-	HTTPServer     `yaml:"http_server" env-required:"true"`
-	ProxyUpdateURL string `yaml:"proxy_update_url" env-required:"true"`
+	Env               string `yaml:"env" env-default:"local"`
+	StoragePath       string `yaml:"storage_path" env-required:"true"`
+	HTTPServer        `yaml:"http_server" env-required:"true"`
+	ProxyUpdateURL    string        `yaml:"proxy_update_url" env-required:"true"`
+	ProxyCheckerURL   string        `yaml:"proxy_checker_url" env-required:"true"`
+	ProxyType         entity.Status `yaml:"proxy_type" env-required:"true"`
+	CheckRoutineCount int           `yaml:"check_routine_count" env-required:"true"`
 }
 
 type HTTPServer struct {

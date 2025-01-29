@@ -23,9 +23,9 @@ func (u *ProxyApiClient) GetProxies(url string) ([]entity.ProxyItem, error) {
 
 	u.log.Debug("call", slog.String("func", fn), slog.String("url", url))
 
-	res, err := helpers.SendGetQuery(url)
+	res, err := helpers.SendGetRequest(url)
 	if err != nil {
-		return nil, fmt.Errorf("%s: %w", fn, err)
+		return nil, fmt.Errorf("%s: %s", fn, err.Error())
 	}
 
 	u.log.Debug("response", slog.String("func", fn), slog.String("result", res))

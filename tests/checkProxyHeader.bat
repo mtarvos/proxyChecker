@@ -1,0 +1,1 @@
+curl -X GET -v http://localhost:8082/check -H "X-Forwarded-For: 192.168.1.1" 
