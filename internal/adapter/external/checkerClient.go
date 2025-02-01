@@ -19,28 +19,28 @@ func NewCheckerApiClient(log *slog.Logger, checkerURL string, proxyType entity.S
 	return &CheckerApiClient{log: log, checkerURL: checkerURL, proxyType: proxyType}
 }
 
-func (c *CheckerApiClient) Check(ip string, port int) (string, bool, error) {
+func (c *CheckerApiClient) Check(proxyItem entity.ProxyItem) (string, error) {
 	const fn = "CheckerApiClient.Check"
 
-	c.log.Debug("call", slog.String("func", fn), slog.String("proxy-ip", ip), slog.Int("port", port))
+	c.log.Debug("call", slog.String("func", fn), slog.String("proxy-ip", proxyItem.IP), slog.Int("port", proxyItem.Port))
 
-	status, res, err := c.SendRequest(ip, port, c.checkerURL)
+	status, res, err := c.SendRequest(proxyItem.IP, proxyItem.Port, c.checkerURL)
 	if err != nil {
-		return "", false, fmt.Errorf("%s: %w", fn, err)
+		return "", fmt.Errorf("%s: %w", fn, err)
 	}
 
 	c.log.Debug("response", slog.String("func", fn), slog.Int("statusCode", status), slog.String("result", res))
 
 	if status != http.StatusOK {
-		return "", false, nil
+		return "", nil
 	}
 
 	var chkResp entity.ProxyCheckerResponse
 	if err = json.Unmarshal([]byte(res), &chkResp); err != nil {
-		return "", false, fmt.Errorf("%s: bad json: %s %w", fn, res, err)
+		return "", fmt.Errorf("%s: bad json: %s %w", fn, res, err)
 	}
 
-	return chkResp.IP, true, nil
+	return chkResp.IP, nil
 }
 
 func (c *CheckerApiClient) SendRequest(proxyIP string, proxyPort int, url string) (int, string, error) {

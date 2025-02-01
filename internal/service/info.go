@@ -18,7 +18,7 @@ type InfoProvider interface {
 }
 
 type InfoRep interface {
-	UpdateProxyInfo(entity.IPInfo) error
+	UpdateProxyInfo(proxyItem entity.ProxyItem) error
 	GetProxyListForInfo() ([]entity.ProxyItem, error)
 }
 
@@ -29,8 +29,8 @@ func NewInfoService(log *slog.Logger, infoProvider InfoProvider, infoRep InfoRep
 func (i *InfoService) StartInfoRoutine(routineCount int) {
 	var wg sync.WaitGroup
 
-	forInfo := make(chan string)
-	forUpdateInfo := make(chan entity.IPInfo)
+	forInfo := make(chan entity.ProxyItem)
+	forUpdateInfo := make(chan entity.ProxyItem)
 
 	wg.Add(2)
 	go i.updateProxyInfo(forUpdateInfo, &wg)
@@ -44,41 +44,46 @@ func (i *InfoService) StartInfoRoutine(routineCount int) {
 	wg.Wait()
 }
 
-func (i *InfoService) infoRoutine(forInfo <-chan string, forUpdateInfo chan<- entity.IPInfo, wg *sync.WaitGroup) {
+func (i *InfoService) infoRoutine(forInfo <-chan entity.ProxyItem, forUpdateInfo chan<- entity.ProxyItem, wg *sync.WaitGroup) {
 	defer wg.Done()
 
 	const fn = "InfoService.infoRoutine"
 
-	for ip := range forInfo {
-		info, err := i.infoProvider.GetInfo(ip)
+	for proxyItem := range forInfo {
+		info, err := i.infoProvider.GetInfo(proxyItem.IP)
 		if err != nil {
 			i.log.Error(
 				"can not get info",
 				slog.String("fn", fn),
 				slog.String("error", err.Error()),
-				slog.String("ip", ip),
+				slog.String("ip", proxyItem.IP),
 			)
 			continue
 		}
 
-		forUpdateInfo <- info
+		proxyItem.Country = info.Country
+		proxyItem.City = info.City
+		proxyItem.ISP = info.ISP
+		proxyItem.Timezone = info.Timezone
+
+		forUpdateInfo <- proxyItem
 	}
 }
 
-func (i *InfoService) updateProxyInfo(forUpdateInfo <-chan entity.IPInfo, wg *sync.WaitGroup) {
+func (i *InfoService) updateProxyInfo(forUpdateInfo <-chan entity.ProxyItem, wg *sync.WaitGroup) {
 	defer wg.Done()
 
 	const fn = "InfoService.updateProxyInfo"
 
-	for ipInfo := range forUpdateInfo {
-		if err := i.infoRep.UpdateProxyInfo(ipInfo); err != nil {
-			i.log.Error("can not update info for ip", slog.String("ip", ipInfo.IP), slog.String("fn", fn), slog.String("error", err.Error()))
+	for proxyItem := range forUpdateInfo {
+		if err := i.infoRep.UpdateProxyInfo(proxyItem); err != nil {
+			i.log.Error("can not update info for ip", slog.String("ip", proxyItem.IP), slog.String("fn", fn), slog.String("error", err.Error()))
 		}
 	}
 
 }
 
-func (i *InfoService) fetcherProxyRoutine(forInfo chan<- string, wg *sync.WaitGroup) {
+func (i *InfoService) fetcherProxyRoutine(forInfo chan<- entity.ProxyItem, wg *sync.WaitGroup) {
 	defer wg.Done()
 
 	const fn = "InfoService.fetcherProxyRoutine"
@@ -96,7 +101,7 @@ func (i *InfoService) fetcherProxyRoutine(forInfo chan<- string, wg *sync.WaitGr
 			}
 
 			for _, item := range proxyList {
-				forInfo <- item.OutIP
+				forInfo <- item
 			}
 		}
 	}

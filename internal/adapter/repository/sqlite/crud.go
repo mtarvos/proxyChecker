@@ -47,67 +47,6 @@ func (s *Storage) GetProxy(filter entity.Filters) ([]entity.ProxyItem, error) {
 	return proxyList, nil
 }
 
-func (s *Storage) UpdateProxy(items []entity.ProxyItem) error {
-	for _, item := range items {
-		if err := s.UpdateProxyItemByIpPort(item); err != nil {
-			return err
-		}
-	}
-
-	return nil
-}
-
-func (s *Storage) UpdateProxyItemByIpPort(item entity.ProxyItem) error {
-	const fn = "sqlite.UpdateProxyItem"
-
-	if item.IP == "" || item.Port == 0 {
-		return fmt.Errorf("%s bad item: ip or port are not defined ", fn)
-	}
-
-	updateBuilder := squirrel.Update("proxy")
-	updateBuilder = setSetBlock(updateBuilder, item)
-	updateBuilder = updateBuilder.
-		Where(squirrel.Eq{"ip": item.IP}).
-		Where(squirrel.Eq{"port": item.Port})
-
-	query, args, err := updateBuilder.ToSql()
-	if err != nil {
-		return fmt.Errorf("%s error build sql update query: %w", fn, err)
-	}
-
-	_, err = s.db.Exec(query, args...)
-	if err != nil {
-		return fmt.Errorf("%s exec update: %w", fn, err)
-	}
-
-	return nil
-}
-
-func (s *Storage) UpdateProxyItemByOutIP(item entity.ProxyItem) error {
-	const fn = "sqlite.UpdateProxyItemByOutIP"
-
-	if item.OutIP == "" {
-		return fmt.Errorf("%s bad item: OutIP is not defined ", fn)
-	}
-
-	updateBuilder := squirrel.Update("proxy")
-	updateBuilder = setSetBlock(updateBuilder, item)
-	updateBuilder = updateBuilder.
-		Where(squirrel.Eq{"out_ip": item.OutIP})
-
-	query, args, err := updateBuilder.ToSql()
-	if err != nil {
-		return fmt.Errorf("%s error build sql update query: %w", fn, err)
-	}
-
-	_, err = s.db.Exec(query, args...)
-	if err != nil {
-		return fmt.Errorf("%s exec update: %w", fn, err)
-	}
-
-	return nil
-}
-
 func (s *Storage) UpdateProxyItemByID(item entity.ProxyItem) error {
 	const fn = "sqlite.UpdateProxyItemByID"
 
@@ -152,6 +91,10 @@ func setSetBlock(updateBuilder squirrel.UpdateBuilder, item entity.ProxyItem) sq
 
 	if item.Timezone != -1 {
 		updateBuilder = updateBuilder.Set("Timezone", item.Timezone)
+	}
+
+	if item.OutIP != "" {
+		updateBuilder = updateBuilder.Set("out_ip", item.OutIP)
 	}
 
 	return updateBuilder

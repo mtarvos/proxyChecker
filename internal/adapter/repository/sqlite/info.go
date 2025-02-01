@@ -12,12 +12,6 @@ func (s *Storage) GetProxyListForInfo() ([]entity.ProxyItem, error) {
 	})
 }
 
-func (s *Storage) UpdateProxyInfo(info entity.IPInfo) error {
-	var proxyItem entity.ProxyItem
-	proxyItem.OutIP = info.IP
-	proxyItem.Country = info.Country
-	proxyItem.City = info.City
-	proxyItem.ISP = info.ISP
-	proxyItem.Timezone = info.Timezone
-	return s.UpdateProxyItemByOutIP(proxyItem)
+func (s *Storage) UpdateProxyInfo(proxyItem entity.ProxyItem) error {
+	return s.UpdateProxyItemByID(proxyItem)
 }
