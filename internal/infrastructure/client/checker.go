@@ -1,4 +1,4 @@
-package external
+package client
 
 import (
 	"encoding/json"
@@ -9,18 +9,18 @@ import (
 	"proxyChecker/internal/lib/helpers"
 )
 
-type CheckerApiClient struct {
+type Checker struct {
 	log        *slog.Logger
 	checkerURL string
 	proxyType  entity.Status
 }
 
-func NewCheckerApiClient(log *slog.Logger, checkerURL string, proxyType entity.Status) *CheckerApiClient {
-	return &CheckerApiClient{log: log, checkerURL: checkerURL, proxyType: proxyType}
+func NewChecker(log *slog.Logger, checkerURL string, proxyType entity.Status) *Checker {
+	return &Checker{log: log, checkerURL: checkerURL, proxyType: proxyType}
 }
 
-func (c *CheckerApiClient) Check(proxyItem entity.ProxyItem) (string, error) {
-	const fn = "CheckerApiClient.Check"
+func (c *Checker) Check(proxyItem entity.ProxyItem) (string, error) {
+	const fn = "Checker.Check"
 
 	status, res, err := c.SendRequest(proxyItem.IP, proxyItem.Port, c.checkerURL)
 	if err != nil {
@@ -39,8 +39,8 @@ func (c *CheckerApiClient) Check(proxyItem entity.ProxyItem) (string, error) {
 	return chkResp.IP, nil
 }
 
-func (c *CheckerApiClient) SendRequest(proxyIP string, proxyPort int, url string) (int, string, error) {
-	const fn = "CheckerApiClient.SendRequest"
+func (c *Checker) SendRequest(proxyIP string, proxyPort int, url string) (int, string, error) {
+	const fn = "Checker.SendRequest"
 
 	var result string
 	var err error

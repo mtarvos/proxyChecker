@@ -4,12 +4,12 @@ import (
 	"log/slog"
 	"net/http"
 	"os"
-	"proxyChecker/internal/adapter/external"
-	"proxyChecker/internal/adapter/repository/sqlite"
 	"proxyChecker/internal/config"
 	"proxyChecker/internal/controller/http"
 	"proxyChecker/internal/controller/http/handler"
 	"proxyChecker/internal/controller/http/middleware"
+	"proxyChecker/internal/infrastructure/client"
+	"proxyChecker/internal/infrastructure/repository/sqlite"
 	"proxyChecker/internal/service"
 )
 
@@ -27,17 +27,17 @@ func Run(log *slog.Logger, cfg *config.Config) {
 		os.Exit(1)
 	}
 
-	proxyProvider := external.NewProxyApiClient(log)
+	proxyProvider := client.NewProxyProvider(log)
 	updater := service.NewUpdaterService(log, cfg.ProxyUpdateURL, proxyProvider, storage)
 	updater.StartUpdateProxyRoutine()
 
 	statsService := service.NewStatsService(log, storage)
 
-	checkerClient := external.NewCheckerApiClient(log, cfg.CheckerURL, cfg.ProxyType)
+	checkerClient := client.NewChecker(log, cfg.CheckerURL, cfg.ProxyType)
 	checkService := service.NewCheckerService(log, storage, checkerClient)
 	go checkService.StartCheckerRoutine(cfg.CheckRoutineCount)
 
-	infoClient := external.NewAbstractAPIClient(log, cfg.InfoURL, cfg.Key)
+	infoClient := client.NewAbstractAPI(log, cfg.InfoURL, cfg.Key)
 	infoService := service.NewInfoService(log, infoClient, storage)
 	go infoService.StartInfoRoutine(cfg.InfoRoutineCount)
 

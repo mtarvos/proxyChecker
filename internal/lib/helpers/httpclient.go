@@ -11,7 +11,7 @@ import (
 )
 
 func SendGetRequest(url string) (string, error) {
-	const fn = "external.sendQuery"
+	const fn = "client.sendQuery"
 
 	res, err := http.Get(url)
 	if err != nil {
@@ -32,7 +32,7 @@ func SendGetRequest(url string) (string, error) {
 }
 
 func SendGetRequestThroughSocks(ip string, port int, url string) (int, string, error) {
-	const fn = "external.SendGetRequestThroughSocks"
+	const fn = "client.SendGetRequestThroughSocks"
 
 	proxyAddr := net.JoinHostPort(ip, fmt.Sprintf("%d", port))
 
@@ -53,7 +53,7 @@ func SendGetRequestThroughSocks(ip string, port int, url string) (int, string, e
 }
 
 func SendGetRequestThroughHttpProxy(ip string, port int, URL string) (int, string, error) {
-	const fn = "external.SendGetRequestThroughHttpProxy"
+	const fn = "client.SendGetRequestThroughHttpProxy"
 
 	proxyAddr := net.JoinHostPort(ip, fmt.Sprintf("%d", port))
 	proxyURL, err := url.Parse("http://" + proxyAddr)
@@ -73,7 +73,7 @@ func SendGetRequestThroughHttpProxy(ip string, port int, URL string) (int, strin
 }
 
 func SendGetRequestThroughHttpsProxy(ip string, port int, URL string) (int, string, error) {
-	const fn = "external.SendGetRequestThroughHttpsProxy"
+	const fn = "client.SendGetRequestThroughHttpsProxy"
 
 	proxyAddr := net.JoinHostPort(ip, fmt.Sprintf("%d", port))
 	proxyURL, err := url.Parse("https://" + proxyAddr)
@@ -93,7 +93,7 @@ func SendGetRequestThroughHttpsProxy(ip string, port int, URL string) (int, stri
 }
 
 func SendRequestThroughClient(client *http.Client, URL string) (int, string, error) {
-	const fn = "external.SendRequestThroughClient"
+	const fn = "client.SendRequestThroughClient"
 
 	res, err := client.Get(URL)
 	if err != nil {

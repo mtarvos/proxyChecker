@@ -1,4 +1,4 @@
-package external
+package client
 
 import (
 	"fmt"
@@ -10,16 +10,16 @@ import (
 	"strings"
 )
 
-type ProxyApiClient struct {
+type ProxyProvider struct {
 	log *slog.Logger
 }
 
-func NewProxyApiClient(log *slog.Logger) *ProxyApiClient {
-	return &ProxyApiClient{log: log}
+func NewProxyProvider(log *slog.Logger) *ProxyProvider {
+	return &ProxyProvider{log: log}
 }
 
-func (u *ProxyApiClient) GetProxies(url string) ([]entity.ProxyItem, error) {
-	const fn = "external.GetProxies"
+func (u *ProxyProvider) GetProxies(url string) ([]entity.ProxyItem, error) {
+	const fn = "client.GetProxies"
 
 	u.log.Debug("call", slog.String("func", fn), slog.String("url", url))
 
@@ -39,7 +39,7 @@ func (u *ProxyApiClient) GetProxies(url string) ([]entity.ProxyItem, error) {
 }
 
 func prepareProxyList(text string) ([]entity.ProxyItem, error) {
-	const fn = "external.prepareProxyList"
+	const fn = "client.prepareProxyList"
 
 	if len(text) == 0 {
 		return []entity.ProxyItem{}, nil

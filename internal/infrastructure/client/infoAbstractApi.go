@@ -1,4 +1,4 @@
-package external
+package client
 
 import (
 	"encoding/json"
@@ -64,18 +64,18 @@ type Connection struct {
 	OrganizationName             *string `json:"organization_name"`
 }
 
-type AbstractAPIClient struct {
+type AbstractAPI struct {
 	log        *slog.Logger
 	getInfoURL string
 	getInfoKey string
 }
 
-func NewAbstractAPIClient(log *slog.Logger, getInfoURL string, getInfoKey string) *AbstractAPIClient {
-	return &AbstractAPIClient{log: log, getInfoURL: getInfoURL, getInfoKey: getInfoKey}
+func NewAbstractAPI(log *slog.Logger, getInfoURL string, getInfoKey string) *AbstractAPI {
+	return &AbstractAPI{log: log, getInfoURL: getInfoURL, getInfoKey: getInfoKey}
 }
 
-func (a *AbstractAPIClient) getFullURL(url string, key string, ip string) (string, error) {
-	const fn = "AbstractAPIClient.getFullURL"
+func (a *AbstractAPI) getFullURL(url string, key string, ip string) (string, error) {
+	const fn = "AbstractAPI.getFullURL"
 	if url == "" || key == "" || ip == "" {
 		return "", fmt.Errorf("%s: url or key or ip are not defined", fn)
 	}
@@ -83,8 +83,8 @@ func (a *AbstractAPIClient) getFullURL(url string, key string, ip string) (strin
 	return fmt.Sprintf("%s?api_key=%s&ip_address=%s", url, key, ip), nil
 }
 
-func (a *AbstractAPIClient) GetInfo(ip string) (entity.IPInfo, error) {
-	const fn = "AbstractAPIClient.GetInfo"
+func (a *AbstractAPI) GetInfo(ip string) (entity.IPInfo, error) {
+	const fn = "AbstractAPI.GetInfo"
 
 	fullURL, err := a.getFullURL(a.getInfoURL, a.getInfoKey, ip)
 	if err != nil {
@@ -111,7 +111,7 @@ func (a *AbstractAPIClient) GetInfo(ip string) (entity.IPInfo, error) {
 	}, nil
 }
 
-func (a *AbstractAPIClient) getPointerValue(fieldVal *string) string {
+func (a *AbstractAPI) getPointerValue(fieldVal *string) string {
 	if fieldVal != nil {
 		return *fieldVal
 	}
