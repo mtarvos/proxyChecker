@@ -19,7 +19,7 @@ func (s *Storage) MigrationsUP() error {
 	}
 	migrationsDir := "migrations"
 
-	if err = goose.Up(s.db, migrationsDir); err != nil {
+	if err = goose.Up(s.db.DB, migrationsDir); err != nil {
 		return fmt.Errorf("can not up migrations: %s", err.Error())
 	}
 

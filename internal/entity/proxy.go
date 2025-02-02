@@ -1,15 +1,15 @@
 package entity
 
 type ProxyItem struct {
-	ID       int64
-	IP       string
-	Port     int
-	OutIP    string
-	Country  string
-	City     string
-	ISP      string
-	Timezone int
-	Alive    int
+	ID       int64  `db:"id"`
+	IP       string `db:"proxy"`
+	Port     int    `db:"port"`
+	OutIP    string `db:"out_ip"`
+	Country  string `db:"country"`
+	City     string `db:"city"`
+	ISP      string `db:"ISP"`
+	Timezone int    `db:"timezone"`
+	Alive    int    `db:"alive"`
 }
 
 const (

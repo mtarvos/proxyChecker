@@ -1,20 +1,20 @@
 package sqlite
 
 import (
-	"database/sql"
 	"fmt"
+	"github.com/jmoiron/sqlx"
 	"log/slog"
 )
 
 type Storage struct {
-	db  *sql.DB
+	db  *sqlx.DB
 	log *slog.Logger
 }
 
 func New(storagePath string, log *slog.Logger) (*Storage, error) {
 	const fn = "sqlite.New"
 
-	db, err := sql.Open("sqlite3", storagePath)
+	db, err := sqlx.Open("sqlite3", storagePath)
 	if err != nil {
 		return nil, fmt.Errorf("%s opening sqlite db: %w", fn, err)
 	}

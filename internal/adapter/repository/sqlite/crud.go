@@ -19,29 +19,10 @@ func (s *Storage) GetProxy(filter entity.Filters) ([]entity.ProxyItem, error) {
 		return nil, fmt.Errorf("%s error build sql query: %s", fn, err.Error())
 	}
 
-	rows, err := s.db.Query(query, args...)
+	var proxyList []entity.ProxyItem
+	err = s.db.Select(&proxyList, query, args...)
 	if err != nil {
 		return nil, fmt.Errorf("%s query: %s", fn, err)
-	}
-
-	var proxyList []entity.ProxyItem
-
-	for rows.Next() {
-		var proxy entity.ProxyItem
-		if err := rows.Scan(
-			&proxy.ID,
-			&proxy.IP,
-			&proxy.Port,
-			&proxy.OutIP,
-			&proxy.Country,
-			&proxy.City,
-			&proxy.ISP,
-			&proxy.Timezone,
-			&proxy.Alive,
-		); err != nil {
-			return nil, fmt.Errorf("%s scan: %s", fn, err)
-		}
-		proxyList = append(proxyList, proxy)
 	}
 
 	return proxyList, nil
