@@ -39,7 +39,7 @@ func Run(log *slog.Logger, cfg *config.Config) {
 
 	infoClient := external.NewAbstractAPIClient(log, cfg.InfoURL, cfg.Key)
 	infoService := service.NewInfoService(log, infoClient, storage)
-	infoService.StartInfoRoutine(cfg.InfoRoutineCount)
+	go infoService.StartInfoRoutine(cfg.InfoRoutineCount)
 
 	proxyService := service.NewProxy(storage)
 	handler := handler.NewHandler(log, proxyService, statsService)

@@ -50,13 +50,15 @@ func (i *InfoService) infoRoutine(forInfo <-chan entity.ProxyItem, forUpdateInfo
 	const fn = "InfoService.infoRoutine"
 
 	for proxyItem := range forInfo {
-		info, err := i.infoProvider.GetInfo(proxyItem.IP)
+		i.log.Info("Get info", slog.String("ip", proxyItem.OutIP))
+
+		info, err := i.infoProvider.GetInfo(proxyItem.OutIP)
 		if err != nil {
 			i.log.Error(
-				"can not get info",
+				"Can not get info",
 				slog.String("fn", fn),
 				slog.String("error", err.Error()),
-				slog.String("ip", proxyItem.IP),
+				slog.String("ip", proxyItem.OutIP),
 			)
 			continue
 		}
@@ -65,6 +67,15 @@ func (i *InfoService) infoRoutine(forInfo <-chan entity.ProxyItem, forUpdateInfo
 		proxyItem.City = info.City
 		proxyItem.ISP = info.ISP
 		proxyItem.Timezone = info.Timezone
+
+		i.log.Info(
+			"Get info success!",
+			slog.String("ip", proxyItem.OutIP),
+			slog.String("Country", proxyItem.Country),
+			slog.String("City", proxyItem.City),
+			slog.String("ISP", proxyItem.ISP),
+			slog.Int("Timezone", proxyItem.Timezone),
+		)
 
 		forUpdateInfo <- proxyItem
 	}

@@ -61,20 +61,36 @@ func (c *CheckerService) checkerRoutine(forCheckAlive <-chan entity.ProxyItem, f
 	const fn = "CheckerService.checkerRoutine"
 
 	for proxyItem := range forCheckAlive {
+		c.log.Info("Check proxy", slog.String("ip", proxyItem.IP), slog.Int("port", proxyItem.Port))
+
 		outIP, err := c.checkerClient.Check(proxyItem)
 		if err != nil {
-			c.log.Error(
-				"can not check proxy",
+			c.log.Warn(
+				"can not check proxy or proxy is dead!",
 				slog.String("fn", fn),
 				slog.String("error", err.Error()),
 				slog.String("proxyIP", proxyItem.IP),
 				slog.Int("proxyPORT", proxyItem.Port),
 			)
-			continue
-		}
+			proxyItem.OutIP = ""
+			proxyItem.Alive = 1
+		} else {
+			if proxyItem.OutIP != outIP {
+				proxyItem.Country = ""
+				proxyItem.City = ""
+				proxyItem.ISP = ""
+				proxyItem.Timezone = -1
+			}
+			proxyItem.OutIP = outIP
+			proxyItem.Alive = 2
 
-		proxyItem.OutIP = outIP
-		proxyItem.Alive = 2
+			c.log.Info(
+				"Proxy is alive!",
+				slog.String("ip", proxyItem.IP),
+				slog.Int("port", proxyItem.Port),
+				slog.String("Out IP", proxyItem.OutIP),
+			)
+		}
 
 		forSetAlive <- proxyItem
 	}
@@ -91,7 +107,6 @@ func (c *CheckerService) setProxyAliveStatus(forSetAlive <-chan entity.ProxyItem
 			c.log.Error("can not set Alive for proxy", slog.String("fn", fn), slog.String("error", err.Error()))
 		}
 	}
-
 }
 
 func (c *CheckerService) fetcherProxyRoutine(toCheckerRoutine chan<- entity.ProxyItem, wg *sync.WaitGroup) {

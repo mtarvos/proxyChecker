@@ -22,14 +22,10 @@ func NewCheckerApiClient(log *slog.Logger, checkerURL string, proxyType entity.S
 func (c *CheckerApiClient) Check(proxyItem entity.ProxyItem) (string, error) {
 	const fn = "CheckerApiClient.Check"
 
-	c.log.Debug("call", slog.String("func", fn), slog.String("proxy-ip", proxyItem.IP), slog.Int("port", proxyItem.Port))
-
 	status, res, err := c.SendRequest(proxyItem.IP, proxyItem.Port, c.checkerURL)
 	if err != nil {
 		return "", fmt.Errorf("%s: %w", fn, err)
 	}
-
-	c.log.Debug("response", slog.String("func", fn), slog.Int("statusCode", status), slog.String("result", res))
 
 	if status != http.StatusOK {
 		return "", nil
