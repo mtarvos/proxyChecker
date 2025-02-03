@@ -9,7 +9,7 @@ import (
 
 func main() {
 	cfg := config.MustLoad()
-	log := logger.InitLogger(cfg.Env)
+	log := logger.InitLogger(cfg.Env, cfg.LogFile)
 
 	log.Info("Starting proxy checker", slog.String("env", cfg.Env))
 
