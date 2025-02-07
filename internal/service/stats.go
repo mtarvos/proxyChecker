@@ -32,8 +32,8 @@ func (s *StatsService) GetStats() (entity.StatsData, error) {
 		return entity.StatsData{}, fmt.Errorf("%s can not get total count: %s", fn, err.Error())
 	}
 
-	val := true
-	statsData.Alive, err = s.provider.GetCountByFilter(entity.Filters{AliveOnly: &val})
+	val := 2
+	statsData.Alive, err = s.provider.GetCountByFilter(entity.Filters{Alive: &val})
 	if err != nil {
 		return entity.StatsData{}, fmt.Errorf("%s can not get alive count: %s", fn, err.Error())
 	}

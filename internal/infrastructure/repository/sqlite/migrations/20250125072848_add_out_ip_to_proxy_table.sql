@@ -1,6 +1,6 @@
 -- +goose Up
 -- +goose StatementBegin
-ALTER TABLE proxy ADD COLUMN out_ip TEXT DEFAULT '';
+ALTER TABLE proxy ADD COLUMN out_ip TEXT DEFAULT NULL;
 CREATE INDEX IF NOT EXISTS idx_out_ip ON proxy(out_ip);
 -- +goose StatementEnd
 

@@ -1,15 +1,17 @@
 package entity
 
+type StringField *string
+
 type ProxyItem struct {
-	ID       int64  `db:"id"`
-	IP       string `db:"proxy"`
-	Port     int    `db:"port"`
-	OutIP    string `db:"out_ip"`
-	Country  string `db:"country"`
-	City     string `db:"city"`
-	ISP      string `db:"ISP"`
-	Timezone int    `db:"timezone"`
-	Alive    int    `db:"alive"`
+	ID       int64            `db:"id" json:"-"`
+	IP       string           `db:"proxy" json:"ip"`
+	Port     int              `db:"port" json:"port"`
+	OutIP    CustomNullString `db:"out_ip" json:"outIP"`
+	Country  CustomNullString `db:"country" json:"country"`
+	City     CustomNullString `db:"city" json:"city"`
+	ISP      CustomNullString `db:"ISP" json:"ISP"`
+	Timezone CustomNullInt32  `db:"timezone" json:"timezone"`
+	Alive    CustomNullInt32  `db:"alive" json:"alive"`
 }
 
 const (
@@ -20,11 +22,11 @@ const (
 type Operand string
 
 type Filters struct {
-	AliveOnly *bool
-	Country   *StringFilter
-	City      *StringFilter
-	ISP       *StringFilter
-	OutIP     *StringFilter
+	Alive   *int
+	Country *StringFilter
+	City    *StringFilter
+	ISP     *StringFilter
+	OutIP   *StringFilter
 }
 
 type StringFilter struct {

@@ -50,31 +50,31 @@ func (i *InfoService) infoRoutine(forInfo <-chan entity.ProxyItem, forUpdateInfo
 	const fn = "InfoService.infoRoutine"
 
 	for proxyItem := range forInfo {
-		i.log.Info("Get info", slog.String("ip", proxyItem.OutIP))
+		i.log.Info("Get info", slog.String("ip", proxyItem.OutIP.String))
 
-		info, err := i.infoProvider.GetInfo(proxyItem.OutIP)
+		info, err := i.infoProvider.GetInfo(proxyItem.OutIP.String)
 		if err != nil {
 			i.log.Error(
 				"Can not get info",
 				slog.String("fn", fn),
 				slog.String("error", err.Error()),
-				slog.String("ip", proxyItem.OutIP),
+				slog.String("ip", proxyItem.OutIP.String),
 			)
 			continue
 		}
 
-		proxyItem.Country = info.Country
-		proxyItem.City = info.City
-		proxyItem.ISP = info.ISP
-		proxyItem.Timezone = info.Timezone
+		proxyItem.Country.Scan(info.Country)
+		proxyItem.City.Scan(info.City)
+		proxyItem.ISP.Scan(info.ISP)
+		proxyItem.Timezone.Scan(info.Timezone)
 
 		i.log.Info(
 			"Get info success!",
-			slog.String("ip", proxyItem.OutIP),
-			slog.String("Country", proxyItem.Country),
-			slog.String("City", proxyItem.City),
-			slog.String("ISP", proxyItem.ISP),
-			slog.Int("Timezone", proxyItem.Timezone),
+			slog.String("ip", proxyItem.OutIP.String),
+			slog.String("Country", proxyItem.Country.String),
+			slog.String("City", proxyItem.City.String),
+			slog.String("ISP", proxyItem.ISP.String),
+			slog.Int("Timezone", int(proxyItem.Timezone.Int32)),
 		)
 
 		forUpdateInfo <- proxyItem

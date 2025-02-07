@@ -19,6 +19,17 @@ const (
 func OK() Response                 { return Response{Status: statusOK} }
 func Error(errMsg string) Response { return Response{Status: statusError, Error: errMsg} }
 
+func Text(w http.ResponseWriter, v interface{}, status int) {
+	var res []byte
+
+	if str, ok := v.(string); ok {
+		res = []byte(str)
+	}
+	w.Header().Set("Content-Type", "text/plain")
+	w.WriteHeader(status)
+	w.Write(res)
+}
+
 func JSON(w http.ResponseWriter, v interface{}, status int) {
 	buf := &bytes.Buffer{}
 	enc := json.NewEncoder(buf)
@@ -31,15 +42,4 @@ func JSON(w http.ResponseWriter, v interface{}, status int) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
 	w.Write(buf.Bytes()) //nolint:errcheck
-}
-
-func Text(w http.ResponseWriter, v interface{}, status int) {
-	var res []byte
-
-	if str, ok := v.(string); ok {
-		res = []byte(str)
-	}
-	w.Header().Set("Content-Type", "text/plain")
-	w.WriteHeader(status)
-	w.Write(res)
 }

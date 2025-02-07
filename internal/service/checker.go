@@ -72,23 +72,22 @@ func (c *CheckerService) checkerRoutine(forCheckAlive <-chan entity.ProxyItem, f
 				slog.String("proxyIP", proxyItem.IP),
 				slog.Int("proxyPORT", proxyItem.Port),
 			)
-			proxyItem.OutIP = ""
-			proxyItem.Alive = 1
+			proxyItem.Alive.Scan(1)
 		} else {
-			if proxyItem.OutIP != outIP {
-				proxyItem.Country = ""
-				proxyItem.City = ""
-				proxyItem.ISP = ""
-				proxyItem.Timezone = -1
+			if proxyItem.OutIP.String != outIP {
+				proxyItem.Country.Valid = false
+				proxyItem.City.Valid = false
+				proxyItem.ISP.Valid = false
+				proxyItem.Timezone.Valid = false
 			}
-			proxyItem.OutIP = outIP
-			proxyItem.Alive = 2
+			proxyItem.OutIP.Scan(outIP)
+			proxyItem.Alive.Scan(2)
 
 			c.log.Info(
 				"Proxy is alive!",
 				slog.String("ip", proxyItem.IP),
 				slog.Int("port", proxyItem.Port),
-				slog.String("Out IP", proxyItem.OutIP),
+				slog.String("Out IP", proxyItem.OutIP.String),
 			)
 		}
 

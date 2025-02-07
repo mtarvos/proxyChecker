@@ -1,6 +1,7 @@
 package sqlite
 
 import (
+	"database/sql"
 	"fmt"
 	"github.com/Masterminds/squirrel"
 	"github.com/mattn/go-sqlite3"
@@ -54,75 +55,53 @@ func (s *Storage) UpdateProxyItemByID(item entity.ProxyItem) error {
 }
 
 func setSetBlock(updateBuilder squirrel.UpdateBuilder, item entity.ProxyItem) squirrel.UpdateBuilder {
-	if item.Alive != 0 {
-		updateBuilder = updateBuilder.Set("alive", item.Alive)
-	}
-
-	if item.Country != "" {
-		updateBuilder = updateBuilder.Set("Country", item.Country)
-	}
-
-	if item.Country != "" {
-		updateBuilder = updateBuilder.Set("City", item.City)
-	}
-
-	if item.ISP != "" {
-		updateBuilder = updateBuilder.Set("ISP", item.ISP)
-	}
-
-	if item.Timezone != -1 {
-		updateBuilder = updateBuilder.Set("Timezone", item.Timezone)
-	}
-
-	if item.OutIP != "" {
-		updateBuilder = updateBuilder.Set("out_ip", item.OutIP)
-	}
-
+	updateBuilder = updateBuilder.Set("alive", item.Alive)
+	updateBuilder = updateBuilder.Set("Country", item.Country)
+	updateBuilder = updateBuilder.Set("City", item.City)
+	updateBuilder = updateBuilder.Set("ISP", item.ISP)
+	updateBuilder = updateBuilder.Set("Timezone", item.Timezone)
+	updateBuilder = updateBuilder.Set("out_ip", item.OutIP)
 	return updateBuilder
 }
 
 func setWhereBlock(queryBuilder squirrel.SelectBuilder, filter entity.Filters) squirrel.SelectBuilder {
-	if filter.AliveOnly != nil {
-		alive := 1
-		if *filter.AliveOnly {
-			alive = 2
-		}
-		queryBuilder = queryBuilder.Where(squirrel.Eq{"alive": alive})
+	if filter.Alive != nil {
+		queryBuilder = queryBuilder.Where(squirrel.Eq{"alive": *filter.Alive})
 	}
 
 	if filter.Country != nil {
-		switch filter.Country.Op {
-		case entity.Eq:
-			queryBuilder = queryBuilder.Where(squirrel.Eq{"country": filter.Country.Val})
-		case entity.Ne:
-			queryBuilder = queryBuilder.Where(squirrel.NotEq{"country": filter.Country.Val})
-		}
+		queryBuilder = buildWhereBlock(queryBuilder, *filter.Country, "country")
 	}
 
 	if filter.City != nil {
-		switch filter.City.Op {
-		case entity.Eq:
-			queryBuilder = queryBuilder.Where(squirrel.Eq{"city": filter.City.Val})
-		case entity.Ne:
-			queryBuilder = queryBuilder.Where(squirrel.NotEq{"City": filter.City.Val})
-		}
+		queryBuilder = buildWhereBlock(queryBuilder, *filter.City, "city")
 	}
 
 	if filter.ISP != nil {
-		switch filter.ISP.Op {
-		case entity.Eq:
-			queryBuilder = queryBuilder.Where(squirrel.Eq{"ISP": filter.ISP.Val})
-		case entity.Ne:
-			queryBuilder = queryBuilder.Where(squirrel.NotEq{"ISP": filter.ISP.Val})
-		}
+		queryBuilder = buildWhereBlock(queryBuilder, *filter.ISP, "ISP")
 	}
 
 	if filter.OutIP != nil {
-		switch filter.OutIP.Op {
+		queryBuilder = buildWhereBlock(queryBuilder, *filter.OutIP, "out_ip")
+	}
+
+	return queryBuilder
+}
+
+func buildWhereBlock(queryBuilder squirrel.SelectBuilder, filterField entity.StringFilter, fieldName string) squirrel.SelectBuilder {
+	if val, ok := filterField.Val.(sql.NullString); ok && !val.Valid {
+		switch filterField.Op {
 		case entity.Eq:
-			queryBuilder = queryBuilder.Where(squirrel.Eq{"out_ip": filter.OutIP.Val})
+			queryBuilder = queryBuilder.Where(squirrel.Eq{fieldName: filterField.Val})
 		case entity.Ne:
-			queryBuilder = queryBuilder.Where(squirrel.NotEq{"out_ip": filter.OutIP.Val})
+			queryBuilder = queryBuilder.Where(squirrel.NotEq{fieldName: filterField.Val})
+		}
+	} else {
+		switch filterField.Op {
+		case entity.Eq:
+			queryBuilder = queryBuilder.Where(squirrel.Expr("LOWER("+fieldName+") = LOWER(?)", filterField.Val))
+		case entity.Ne:
+			queryBuilder = queryBuilder.Where(squirrel.Expr("LOWER("+fieldName+") <> LOWER(?)", filterField.Val))
 		}
 	}
 
