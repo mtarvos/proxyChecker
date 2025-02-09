@@ -10,6 +10,7 @@ type ProxyService struct {
 
 type proxyRepository interface {
 	GetProxy(filter entity.Filters) ([]entity.ProxyItem, error)
+	GetCountByFilter(filter entity.Filters) (int, error)
 }
 
 func NewProxy(storage proxyRepository) *ProxyService {
@@ -18,4 +19,8 @@ func NewProxy(storage proxyRepository) *ProxyService {
 
 func (p *ProxyService) GetProxyList(filter entity.Filters) ([]entity.ProxyItem, error) {
 	return p.proxyRepo.GetProxy(filter)
+}
+
+func (p *ProxyService) GetTotalCountByFilter(filter entity.Filters) (int, error) {
+	return p.proxyRepo.GetCountByFilter(filter)
 }

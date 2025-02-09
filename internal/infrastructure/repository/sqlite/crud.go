@@ -13,6 +13,14 @@ func (s *Storage) GetProxy(filter entity.Filters) ([]entity.ProxyItem, error) {
 
 	queryBuilder := squirrel.Select("id, proxy, port, out_ip, country, city, ISP, timezone, alive").From("proxy")
 
+	if filter.Page != 0 && filter.Limit != 0 {
+		queryBuilder = queryBuilder.Offset(uint64((filter.Page - 1) * filter.Limit))
+	}
+
+	if filter.Limit != 0 {
+		queryBuilder = queryBuilder.Limit(uint64(filter.Limit))
+	}
+
 	queryBuilder = setWhereBlock(queryBuilder, filter)
 
 	query, args, err := queryBuilder.ToSql()

@@ -61,6 +61,35 @@ font-weight: bold;
   font-weight: normal; 
 }
 
+.pagination {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin-top: 20px;
+    padding: 10px;
+}
+.pagination a {
+    color: black;
+    padding: 8px 16px;
+    text-decoration: none;
+    border: 1px solid #ddd;
+    margin: 0 4px;
+    border-radius: 4px;
+}
+.pagination a:hover {
+    background-color: #f5f5f5;
+}
+.pagination a.active {
+    background-color: #4CAF50;
+    color: white;
+    border: 1px solid #4CAF50;
+}
+.pagination a.disabled {
+    color: #9E9E9E;
+    pointer-events: none;
+    border: 1px solid #ddd;
+}
+
 </style>
 </head>
 <body>
@@ -79,7 +108,7 @@ font-weight: bold;
 </tr>
 </thead>
 <tbody>
-{{range .}}
+{{range .ProxyList}}
 <tr>
 <td>{{.IP}}</td>
 <td>{{.Port}}</td>
@@ -95,6 +124,31 @@ font-weight: bold;
 {{end}}
 </tbody>
 </table>
+<div class="pagination">
+        {{if gt .CurrentPage 1}}
+            <a href="?page=1&limit={{.Limit}}">&laquo; First</a>
+            <a href="?page={{subtract .CurrentPage 1}}&limit={{.Limit}}">&lsaquo; Previous</a>
+        {{else}}
+            <a class="disabled">&laquo; First</a>
+            <a class="disabled">&lsaquo; Previous</a>
+        {{end}}
+        
+        {{range .Pages}}
+            {{if eq . $.CurrentPage}}
+                <a class="active">{{.}}</a>
+            {{else}}
+                <a href="?page={{.}}&limit={{$.Limit}}">{{.}}</a>
+            {{end}}
+        {{end}}
+        
+        {{if lt .CurrentPage .TotalPages}}
+            <a href="?page={{add .CurrentPage 1}}&limit={{.Limit}}">Next &rsaquo;</a>
+            <a href="?page={{.TotalPages}}&limit={{.Limit}}">Last &raquo;</a>
+        {{else}}
+            <a class="disabled">Next &rsaquo;</a>
+            <a class="disabled">Last &raquo;</a>
+        {{end}}
+    </div>
 </div>
 </body>
 </html>

@@ -27,6 +27,8 @@ type Filters struct {
 	City    *StringFilter
 	ISP     *StringFilter
 	OutIP   *StringFilter
+	Page    int
+	Limit   int
 }
 
 type StringFilter struct {

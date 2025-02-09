@@ -13,6 +13,7 @@ type Handler struct {
 
 type ProxyService interface {
 	GetProxyList(filter entity.Filters) ([]entity.ProxyItem, error)
+	GetTotalCountByFilter(filter entity.Filters) (int, error)
 }
 
 type StatsService interface {
