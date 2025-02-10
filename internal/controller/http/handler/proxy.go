@@ -39,7 +39,7 @@ func (h *Handler) Proxy() http.HandlerFunc {
 			return
 		}
 
-		proxyList, err := h.proxyService.GetProxyList(filter)
+		proxyList, err := h.proxyService.GetProxyList(h.ctx, filter)
 		if err != nil {
 			log.Error(err.Error())
 			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
@@ -61,7 +61,7 @@ func (h *Handler) Proxy() http.HandlerFunc {
 			return
 		}
 
-		totalItems, err := h.proxyService.GetTotalCountByFilter(filter)
+		totalItems, err := h.proxyService.GetTotalCountByFilter(h.ctx, filter)
 		if err != nil {
 			log.Error(err.Error())
 			http.Error(w, "Internal Server Error", http.StatusInternalServerError)

@@ -1,6 +1,7 @@
 package sqlite
 
 import (
+	"context"
 	"database/sql"
 	"fmt"
 	"github.com/Masterminds/squirrel"
@@ -8,7 +9,7 @@ import (
 	"proxyChecker/internal/entity"
 )
 
-func (s *Storage) GetProxy(filter entity.Filters) ([]entity.ProxyItem, error) {
+func (s *Storage) GetProxy(ctx context.Context, filter entity.Filters) ([]entity.ProxyItem, error) {
 	const fn = "Storage.GetProxy"
 
 	queryBuilder := squirrel.Select("id, proxy, port, out_ip, country, city, ISP, timezone, alive").From("proxy")
@@ -25,11 +26,11 @@ func (s *Storage) GetProxy(filter entity.Filters) ([]entity.ProxyItem, error) {
 
 	query, args, err := queryBuilder.ToSql()
 	if err != nil {
-		return nil, fmt.Errorf("%s error build sql query: %s", fn, err.Error())
+		return nil, fmt.Errorf("%s error build sql query: %w", fn, err)
 	}
 
 	var proxyList []entity.ProxyItem
-	err = s.db.Select(&proxyList, query, args...)
+	err = s.db.SelectContext(ctx, &proxyList, query, args...)
 	if err != nil {
 		return nil, fmt.Errorf("%s query: %s", fn, err)
 	}
@@ -37,7 +38,7 @@ func (s *Storage) GetProxy(filter entity.Filters) ([]entity.ProxyItem, error) {
 	return proxyList, nil
 }
 
-func (s *Storage) UpdateProxyItemByID(item entity.ProxyItem) error {
+func (s *Storage) UpdateProxyItemByID(ctx context.Context, item entity.ProxyItem) error {
 	const fn = "sqlite.UpdateProxyItemByID"
 
 	if item.ID == 0 {
@@ -54,7 +55,7 @@ func (s *Storage) UpdateProxyItemByID(item entity.ProxyItem) error {
 		return fmt.Errorf("%s error build sql update query: %w", fn, err)
 	}
 
-	_, err = s.db.Exec(query, args...)
+	_, err = s.db.ExecContext(ctx, query, args...)
 	if err != nil {
 		return fmt.Errorf("%s exec update: %w", fn, err)
 	}
@@ -116,7 +117,7 @@ func buildWhereBlock(queryBuilder squirrel.SelectBuilder, filterField entity.Str
 	return queryBuilder
 }
 
-func (s *Storage) SaveProxy(proxyList []entity.ProxyItem) error {
+func (s *Storage) SaveProxy(ctx context.Context, proxyList []entity.ProxyItem) error {
 	const fn = "sqlite.SaveProxy"
 
 	query, err := s.db.Prepare("INSERT INTO PROXY(proxy, port, country, city, ISP, timezone, alive) VALUES (?, ?, ?, ?, ?, ?, ?);")
@@ -125,7 +126,7 @@ func (s *Storage) SaveProxy(proxyList []entity.ProxyItem) error {
 	}
 
 	for _, proxy := range proxyList {
-		_, err := query.Exec(proxy.IP, proxy.Port, proxy.Country, proxy.City, proxy.ISP, proxy.Timezone, proxy.Alive)
+		_, err := query.ExecContext(ctx, proxy.IP, proxy.Port, proxy.Country, proxy.City, proxy.ISP, proxy.Timezone, proxy.Alive)
 		if err != nil {
 			if sqliteErr, ok := err.(sqlite3.Error); ok && sqliteErr.ExtendedCode != sqlite3.ErrConstraintUnique {
 				return fmt.Errorf("%s exec insert: %s", fn, err)

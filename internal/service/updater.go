@@ -1,9 +1,11 @@
 package service
 
 import (
+	"context"
 	"fmt"
 	"log/slog"
 	"proxyChecker/internal/entity"
+	"sync"
 	"time"
 )
 
@@ -15,11 +17,11 @@ type UpdaterService struct {
 }
 
 type ProxyProvider interface {
-	GetProxies(url string) ([]entity.ProxyItem, error)
+	GetProxies(ctx context.Context, url string) ([]entity.ProxyItem, error)
 }
 
 type ProxySaver interface {
-	SaveProxy(proxyList []entity.ProxyItem) error
+	SaveProxy(ctx context.Context, proxyList []entity.ProxyItem) error
 }
 
 func NewUpdaterService(log *slog.Logger, url string, provider ProxyProvider, saver ProxySaver) *UpdaterService {
@@ -31,16 +33,15 @@ func NewUpdaterService(log *slog.Logger, url string, provider ProxyProvider, sav
 	}
 }
 
-func (u *UpdaterService) StartUpdateProxyRoutine() {
+func (u *UpdaterService) StartUpdateProxyRoutine(ctx context.Context, wg *sync.WaitGroup) {
+	defer wg.Done()
 	const fn = "proxy.StartUpdateProxyRoutine"
 
 	u.log.Debug("call", slog.String("func", fn))
 
 	ticker := time.NewTicker(1 * time.Minute)
 
-	quit := make(chan struct{})
-
-	if err := u.worker(u.url, u.provider, u.saver); err != nil {
+	if err := u.worker(ctx, u.url, u.provider, u.saver); err != nil {
 		u.log.Error("error updating proxy list", slog.String("func", fn), slog.String("error", err.Error()))
 		return
 	}
@@ -49,32 +50,32 @@ func (u *UpdaterService) StartUpdateProxyRoutine() {
 		for {
 			select {
 			case <-ticker.C:
-				if err := u.worker(u.url, u.provider, u.saver); err != nil {
-					u.log.Error("error updating proxy list; exit goroutine", slog.String("func", fn), slog.String("error", err.Error()))
-					return
+				if err := u.worker(ctx, u.url, u.provider, u.saver); err != nil {
+					u.log.Error("error updating proxy list", slog.String("func", fn), slog.String("error", err.Error()))
+					break
 				}
-			case <-quit:
-				u.log.Debug("%s: update goroutine stopped", fn)
-				return
+			case <-ctx.Done():
+				break
 			}
 		}
 	}()
 
+	u.log.Info("Update goroutine stopped")
 }
 
-func (u *UpdaterService) worker(url string, proxyGetter ProxyProvider, saver ProxySaver) error {
+func (u *UpdaterService) worker(ctx context.Context, url string, proxyGetter ProxyProvider, saver ProxySaver) error {
 	const fn = "proxy.worker"
 
 	u.log.Debug("call", slog.String("func", fn))
 
-	proxyList, err := proxyGetter.GetProxies(url)
+	proxyList, err := proxyGetter.GetProxies(ctx, url)
 	if err != nil {
-		return fmt.Errorf("%s update proxy error: %s", fn, err.Error())
+		return fmt.Errorf("%s update proxy error: %w", fn, err)
 	}
 
-	err = saver.SaveProxy(proxyList)
+	err = saver.SaveProxy(ctx, proxyList)
 	if err != nil {
-		return fmt.Errorf("%s save proxy list error: %s", fn, err.Error())
+		return fmt.Errorf("%s save proxy list error: %w", fn, err)
 	}
 
 	return nil

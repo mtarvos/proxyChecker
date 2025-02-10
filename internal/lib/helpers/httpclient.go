@@ -1,6 +1,7 @@
 package helpers
 
 import (
+	"context"
 	"fmt"
 	"golang.org/x/net/proxy"
 	"io"
@@ -10,35 +11,24 @@ import (
 	"time"
 )
 
-func SendGetRequest(url string) (string, error) {
-	const fn = "client.sendQuery"
+func SendGetRequest(ctx context.Context, url string) (int, string, error) {
+	const fn = "client.SendGetRequest"
 
-	res, err := http.Get(url)
-	if err != nil {
-		return "", fmt.Errorf("%s error send query %s", fn, err.Error())
-	}
-	defer res.Body.Close()
-
-	if res.StatusCode != http.StatusOK {
-		return "", fmt.Errorf("%s query return status code: %d", fn, res.StatusCode)
+	client := &http.Client{
+		Timeout: 5 * time.Second,
 	}
 
-	body, err := io.ReadAll(res.Body)
-	if err != nil {
-		return "", fmt.Errorf("%s error read body %s", fn, err.Error())
-	}
-
-	return string(body), nil
+	return SendRequestThroughClient(ctx, client, url)
 }
 
-func SendGetRequestThroughSocks(ip string, port int, url string) (int, string, error) {
+func SendGetRequestThroughSocks(ctx context.Context, ip string, port int, url string) (int, string, error) {
 	const fn = "client.SendGetRequestThroughSocks"
 
 	proxyAddr := net.JoinHostPort(ip, fmt.Sprintf("%d", port))
 
 	dialer, err := proxy.SOCKS5("tcp", proxyAddr, nil, proxy.Direct)
 	if err != nil {
-		return 0, "", fmt.Errorf("%s error create dialer %s", fn, err.Error())
+		return 0, "", fmt.Errorf("%s error create dialer: %w", fn, err)
 	}
 
 	client := &http.Client{
@@ -49,16 +39,16 @@ func SendGetRequestThroughSocks(ip string, port int, url string) (int, string, e
 		Timeout: 60 * time.Second,
 	}
 
-	return SendRequestThroughClient(client, url)
+	return SendRequestThroughClient(ctx, client, url)
 }
 
-func SendGetRequestThroughHttpProxy(ip string, port int, URL string) (int, string, error) {
+func SendGetRequestThroughHttpProxy(ctx context.Context, ip string, port int, URL string) (int, string, error) {
 	const fn = "client.SendGetRequestThroughHttpProxy"
 
 	proxyAddr := net.JoinHostPort(ip, fmt.Sprintf("%d", port))
 	proxyURL, err := url.Parse("http://" + proxyAddr)
 	if err != nil {
-		return 0, "", fmt.Errorf("%s bad URL %s: %s", fn, proxyAddr, err.Error())
+		return 0, "", fmt.Errorf("%s bad URL %s: %w", fn, proxyAddr, err)
 	}
 
 	client := &http.Client{
@@ -69,16 +59,16 @@ func SendGetRequestThroughHttpProxy(ip string, port int, URL string) (int, strin
 		Timeout: 5 * time.Second,
 	}
 
-	return SendRequestThroughClient(client, URL)
+	return SendRequestThroughClient(ctx, client, URL)
 }
 
-func SendGetRequestThroughHttpsProxy(ip string, port int, URL string) (int, string, error) {
+func SendGetRequestThroughHttpsProxy(ctx context.Context, ip string, port int, URL string) (int, string, error) {
 	const fn = "client.SendGetRequestThroughHttpsProxy"
 
 	proxyAddr := net.JoinHostPort(ip, fmt.Sprintf("%d", port))
 	proxyURL, err := url.Parse("https://" + proxyAddr)
 	if err != nil {
-		return 0, "", fmt.Errorf("%s bad url %s: %s", fn, proxyAddr, err.Error())
+		return 0, "", fmt.Errorf("%s bad url %s: %w", fn, proxyAddr, err)
 	}
 
 	client := &http.Client{
@@ -89,15 +79,20 @@ func SendGetRequestThroughHttpsProxy(ip string, port int, URL string) (int, stri
 		Timeout: 5 * time.Second,
 	}
 
-	return SendRequestThroughClient(client, URL)
+	return SendRequestThroughClient(ctx, client, URL)
 }
 
-func SendRequestThroughClient(client *http.Client, URL string) (int, string, error) {
+func SendRequestThroughClient(ctx context.Context, client *http.Client, URL string) (int, string, error) {
 	const fn = "client.SendRequestThroughClient"
 
-	res, err := client.Get(URL)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, URL, nil)
 	if err != nil {
-		return 0, "", fmt.Errorf("%s error send query %s", fn, err.Error())
+		return 0, "", fmt.Errorf("%s error creating request: %w", fn, err)
+	}
+
+	res, err := client.Do(req)
+	if err != nil {
+		return 0, "", fmt.Errorf("%s error send query: %w", fn, err)
 	}
 	if res.Body != nil {
 		defer res.Body.Close()
@@ -109,7 +104,7 @@ func SendRequestThroughClient(client *http.Client, URL string) (int, string, err
 
 	body, err := io.ReadAll(res.Body)
 	if err != nil {
-		return 0, "", fmt.Errorf("%s error read body %s", fn, err.Error())
+		return 0, "", fmt.Errorf("%s error read body: %w", fn, err)
 	}
 
 	return res.StatusCode, string(body), nil

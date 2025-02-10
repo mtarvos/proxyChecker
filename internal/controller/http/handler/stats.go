@@ -19,7 +19,7 @@ func (h *Handler) Stats() http.HandlerFunc {
 			slog.String("fn", fn),
 		)
 
-		statsData, err := h.statsService.GetStats()
+		statsData, err := h.statsService.GetStats(h.ctx)
 		if err != nil {
 			log.Error(err.Error())
 			http.Error(w, "Internal Server Error", http.StatusInternalServerError)

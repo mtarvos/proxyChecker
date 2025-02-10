@@ -1,6 +1,7 @@
 package client
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"log/slog"
@@ -19,10 +20,10 @@ func NewChecker(log *slog.Logger, checkerURL string, proxyType entity.Status) *C
 	return &Checker{log: log, checkerURL: checkerURL, proxyType: proxyType}
 }
 
-func (c *Checker) Check(proxyItem entity.ProxyItem) (string, error) {
+func (c *Checker) Check(ctx context.Context, proxyItem entity.ProxyItem) (string, error) {
 	const fn = "Checker.Check"
 
-	status, res, err := c.SendRequest(proxyItem.IP, proxyItem.Port, c.checkerURL)
+	status, res, err := c.SendRequest(ctx, proxyItem.IP, proxyItem.Port, c.checkerURL)
 	if err != nil {
 		return "", fmt.Errorf("%s: %w", fn, err)
 	}
@@ -39,7 +40,7 @@ func (c *Checker) Check(proxyItem entity.ProxyItem) (string, error) {
 	return chkResp.IP, nil
 }
 
-func (c *Checker) SendRequest(proxyIP string, proxyPort int, url string) (int, string, error) {
+func (c *Checker) SendRequest(ctx context.Context, proxyIP string, proxyPort int, url string) (int, string, error) {
 	const fn = "Checker.SendRequest"
 
 	var result string
@@ -48,19 +49,19 @@ func (c *Checker) SendRequest(proxyIP string, proxyPort int, url string) (int, s
 
 	switch c.proxyType {
 	case entity.SOCKS:
-		status, result, err = helpers.SendGetRequestThroughSocks(proxyIP, proxyPort, url)
+		status, result, err = helpers.SendGetRequestThroughSocks(ctx, proxyIP, proxyPort, url)
 		if err != nil {
-			return 0, "", fmt.Errorf("%s: %s", fn, err.Error())
+			return 0, "", fmt.Errorf("%s: %w", fn, err)
 		}
 	case entity.HTTP_PROXY:
-		status, result, err = helpers.SendGetRequestThroughHttpProxy(proxyIP, proxyPort, url)
+		status, result, err = helpers.SendGetRequestThroughHttpProxy(ctx, proxyIP, proxyPort, url)
 		if err != nil {
-			return 0, "", fmt.Errorf("%s: %s", fn, err.Error())
+			return 0, "", fmt.Errorf("%s: %w", fn, err)
 		}
 	case entity.HTTPS_PROXY:
-		status, result, err = helpers.SendGetRequestThroughHttpsProxy(proxyIP, proxyPort, url)
+		status, result, err = helpers.SendGetRequestThroughHttpsProxy(ctx, proxyIP, proxyPort, url)
 		if err != nil {
-			return 0, "", fmt.Errorf("%s: %s", fn, err.Error())
+			return 0, "", fmt.Errorf("%s: %w", fn, err)
 		}
 	}
 

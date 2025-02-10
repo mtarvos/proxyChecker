@@ -1,6 +1,7 @@
 package client
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"log/slog"
@@ -83,7 +84,7 @@ func (a *AbstractAPI) getFullURL(url string, key string, ip string) (string, err
 	return fmt.Sprintf("%s?api_key=%s&ip_address=%s", url, key, ip), nil
 }
 
-func (a *AbstractAPI) GetInfo(ip string) (entity.IPInfo, error) {
+func (a *AbstractAPI) GetInfo(ctx context.Context, ip string) (entity.IPInfo, error) {
 	const fn = "AbstractAPI.GetInfo"
 
 	fullURL, err := a.getFullURL(a.getInfoURL, a.getInfoKey, ip)
@@ -91,7 +92,7 @@ func (a *AbstractAPI) GetInfo(ip string) (entity.IPInfo, error) {
 		return entity.IPInfo{}, fmt.Errorf("%s: Error get full url for AbstractAPI: %w", fn, err)
 	}
 
-	result, err := helpers.SendGetRequest(fullURL)
+	_, result, err := helpers.SendGetRequest(ctx, fullURL)
 	if err != nil {
 		return entity.IPInfo{}, fmt.Errorf("%s: Error getting ip info by AbstractAPI: %w", fn, err)
 	}

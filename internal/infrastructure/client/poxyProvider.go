@@ -1,6 +1,7 @@
 package client
 
 import (
+	"context"
 	"fmt"
 	"log/slog"
 	"net"
@@ -18,14 +19,14 @@ func NewProxyProvider(log *slog.Logger) *ProxyProvider {
 	return &ProxyProvider{log: log}
 }
 
-func (u *ProxyProvider) GetProxies(url string) ([]entity.ProxyItem, error) {
+func (u *ProxyProvider) GetProxies(ctx context.Context, url string) ([]entity.ProxyItem, error) {
 	const fn = "client.GetProxies"
 
 	u.log.Debug("call", slog.String("func", fn), slog.String("url", url))
 
-	res, err := helpers.SendGetRequest(url)
+	_, res, err := helpers.SendGetRequest(ctx, url)
 	if err != nil {
-		return nil, fmt.Errorf("%s: %s", fn, err.Error())
+		return nil, fmt.Errorf("%s: %w", fn, err)
 	}
 
 	u.log.Debug("response", slog.String("func", fn), slog.String("result", res))
@@ -52,12 +53,12 @@ func prepareProxyList(text string) ([]entity.ProxyItem, error) {
 	for _, item := range list {
 		ip, port, err := net.SplitHostPort(item)
 		if err != nil {
-			return nil, fmt.Errorf("error parse ip and port from query result", fn, err.Error())
+			return nil, fmt.Errorf("%s: error parse ip and port from query result: %w", fn, err)
 		}
 
 		iPort, err := strconv.Atoi(port)
 		if err != nil {
-			return nil, fmt.Errorf("error convert port to string", fn, err.Error())
+			return nil, fmt.Errorf("%s: error convert port to string: %w", fn, err)
 		}
 
 		proxyList = append(proxyList, entity.ProxyItem{IP: ip, Port: iPort})

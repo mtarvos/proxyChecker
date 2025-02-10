@@ -1,6 +1,7 @@
 package service
 
 import (
+	"context"
 	"fmt"
 	"log/slog"
 	"proxyChecker/internal/entity"
@@ -13,36 +14,36 @@ type StatsService struct {
 }
 
 type StatsProvider interface {
-	GetCountByFilter(filter entity.Filters) (int, error)
-	GetDistinctField(fieldName string, filter entity.Filters) ([]string, error)
+	GetCountByFilter(ctx context.Context, filter entity.Filters) (int, error)
+	GetDistinctField(ctx context.Context, fieldName string, filter entity.Filters) ([]string, error)
 }
 
 func NewStatsService(log *slog.Logger, statsProvider StatsProvider) *StatsService {
 	return &StatsService{log: log, provider: statsProvider}
 }
 
-func (s *StatsService) GetStats() (entity.StatsData, error) {
+func (s *StatsService) GetStats(ctx context.Context) (entity.StatsData, error) {
 	const fn = "stats.GetStats"
 
 	var statsData entity.StatsData
 
 	var err error
-	statsData.Total, err = s.provider.GetCountByFilter(entity.Filters{})
+	statsData.Total, err = s.provider.GetCountByFilter(ctx, entity.Filters{})
 	if err != nil {
-		return entity.StatsData{}, fmt.Errorf("%s can not get total count: %s", fn, err.Error())
+		return entity.StatsData{}, fmt.Errorf("%s can not get total count: %w", fn, err)
 	}
 
 	val := 2
-	statsData.Alive, err = s.provider.GetCountByFilter(entity.Filters{Alive: &val})
+	statsData.Alive, err = s.provider.GetCountByFilter(ctx, entity.Filters{Alive: &val})
 	if err != nil {
-		return entity.StatsData{}, fmt.Errorf("%s can not get alive count: %s", fn, err.Error())
+		return entity.StatsData{}, fmt.Errorf("%s can not get alive count: %w", fn, err)
 	}
 
 	statsData.Dead = statsData.Total - statsData.Alive
 
-	uniqCountry, err := s.provider.GetDistinctField("country", entity.Filters{})
+	uniqCountry, err := s.provider.GetDistinctField(ctx, "country", entity.Filters{})
 	if err != nil {
-		return entity.StatsData{}, fmt.Errorf("%s can not get distinct country count: %s", fn, err.Error())
+		return entity.StatsData{}, fmt.Errorf("%s can not get distinct country count: %w", fn, err)
 	}
 	statsData.UniqCountry = len(uniqCountry)
 
@@ -50,15 +51,16 @@ func (s *StatsService) GetStats() (entity.StatsData, error) {
 		var item entity.CountryStatsItem
 		item.Country = country
 		item.Count, err = s.provider.GetCountByFilter(
+			ctx,
 			entity.Filters{Country: helpers.Cf(country, entity.Eq)},
 		)
 
 		statsData.CountryStats = append(statsData.CountryStats, item)
 	}
 
-	uniqISP, err := s.provider.GetDistinctField("ISP", entity.Filters{})
+	uniqISP, err := s.provider.GetDistinctField(ctx, "ISP", entity.Filters{})
 	if err != nil {
-		return entity.StatsData{}, fmt.Errorf("%s can not get distinct ISP count: %s", fn, err.Error())
+		return entity.StatsData{}, fmt.Errorf("%s can not get distinct ISP count: %w", fn, err)
 	}
 	statsData.UniqISP = len(uniqISP)
 
@@ -66,6 +68,7 @@ func (s *StatsService) GetStats() (entity.StatsData, error) {
 		var item entity.ISPStatsItem
 		item.ISP = isp
 		item.Count, err = s.provider.GetCountByFilter(
+			ctx,
 			entity.Filters{Country: helpers.Cf(isp, entity.Eq)},
 		)
 		statsData.ISPStats = append(statsData.ISPStats, item)

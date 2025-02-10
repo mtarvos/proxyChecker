@@ -1,6 +1,8 @@
 package service
 
 import (
+	"context"
+	"errors"
 	"log/slog"
 	"proxyChecker/internal/entity"
 	"sync"
@@ -25,46 +27,51 @@ type ProxyAddr struct {
 }
 
 type CheckerClient interface {
-	Check(proxyItem entity.ProxyItem) (string, error)
+	Check(ctx context.Context, proxyItem entity.ProxyItem) (string, error)
 }
 
 type ProxyStorage interface {
-	SetAlive(proxyItem entity.ProxyItem) error
-	GetProxy(filter entity.Filters) ([]entity.ProxyItem, error)
+	SetAlive(ctx context.Context, proxyItem entity.ProxyItem) error
+	GetProxy(ctx context.Context, filter entity.Filters) ([]entity.ProxyItem, error)
 }
 
 func NewCheckerService(log *slog.Logger, storage ProxyStorage, checkerClient CheckerClient) *CheckerService {
 	return &CheckerService{log: log, storage: storage, checkerClient: checkerClient}
 }
 
-func (c *CheckerService) StartCheckerRoutine(routineCount int) {
+func (c *CheckerService) StartCheckerRoutine(ctx context.Context, routineCount int, checkerWG *sync.WaitGroup) {
+	defer checkerWG.Done()
+
 	var wg sync.WaitGroup
 
 	forCheck := make(chan entity.ProxyItem)
 	forSetAlive := make(chan entity.ProxyItem)
 
 	wg.Add(2)
-	go c.setProxyAliveStatus(forSetAlive, &wg)
-	go c.fetcherProxyRoutine(forCheck, &wg)
+	go c.setProxyAliveStatus(ctx, forSetAlive, &wg)
+	go c.fetcherProxyRoutine(ctx, forCheck, &wg)
 
 	for i := 0; i < routineCount; i++ {
 		wg.Add(1)
-		go c.checkerRoutine(forCheck, forSetAlive, &wg)
+		go c.checkerRoutine(ctx, forCheck, forSetAlive, &wg)
 	}
 
 	wg.Wait()
+	c.log.Info("All Checker goroutine completed")
 }
 
-func (c *CheckerService) checkerRoutine(forCheckAlive <-chan entity.ProxyItem, forSetAlive chan<- entity.ProxyItem, wg *sync.WaitGroup) {
+func (c *CheckerService) checkerRoutine(ctx context.Context, forCheckAlive <-chan entity.ProxyItem, forSetAlive chan<- entity.ProxyItem, wg *sync.WaitGroup) {
 	defer wg.Done()
 
 	const fn = "CheckerService.checkerRoutine"
-
 	for proxyItem := range forCheckAlive {
 		c.log.Info("Check proxy", slog.String("ip", proxyItem.IP), slog.Int("port", proxyItem.Port))
 
-		outIP, err := c.checkerClient.Check(proxyItem)
+		outIP, err := c.checkerClient.Check(ctx, proxyItem)
 		if err != nil {
+			if errors.Is(err, context.Canceled) {
+				continue
+			}
 			c.log.Warn(
 				"can not check proxy or proxy is dead!",
 				slog.String("fn", fn),
@@ -94,21 +101,25 @@ func (c *CheckerService) checkerRoutine(forCheckAlive <-chan entity.ProxyItem, f
 		forSetAlive <- proxyItem
 	}
 
+	close(forSetAlive)
 }
 
-func (c *CheckerService) setProxyAliveStatus(forSetAlive <-chan entity.ProxyItem, wg *sync.WaitGroup) {
+func (c *CheckerService) setProxyAliveStatus(ctx context.Context, forSetAlive <-chan entity.ProxyItem, wg *sync.WaitGroup) {
 	defer wg.Done()
 
 	const fn = "CheckerService.saverProxyAlive"
 
 	for proxyItem := range forSetAlive {
-		if err := c.storage.SetAlive(proxyItem); err != nil {
+		if err := c.storage.SetAlive(ctx, proxyItem); err != nil {
+			if errors.Is(err, context.Canceled) {
+				continue
+			}
 			c.log.Error("can not set Alive for proxy", slog.String("fn", fn), slog.String("error", err.Error()))
 		}
 	}
 }
 
-func (c *CheckerService) fetcherProxyRoutine(toCheckerRoutine chan<- entity.ProxyItem, wg *sync.WaitGroup) {
+func (c *CheckerService) fetcherProxyRoutine(ctx context.Context, toCheckerRoutine chan<- entity.ProxyItem, wg *sync.WaitGroup) {
 	defer wg.Done()
 
 	const fn = "CheckerService.fetcherProxyRoutine"
@@ -119,15 +130,25 @@ func (c *CheckerService) fetcherProxyRoutine(toCheckerRoutine chan<- entity.Prox
 	for {
 		select {
 		case <-ticker.C:
-			proxyList, err := c.storage.GetProxy(entity.Filters{})
+			proxyList, err := c.storage.GetProxy(ctx, entity.Filters{})
 			if err != nil {
+				if errors.Is(err, context.Canceled) {
+					continue
+				}
 				c.log.Error("can not get proxy list for checking", slog.String("fn", fn), slog.String("error", err.Error()))
 				continue
 			}
 
 			for _, item := range proxyList {
+				if ctx.Err() != nil {
+					break
+				}
 				toCheckerRoutine <- item
 			}
+		case <-ctx.Done():
+			c.log.Info("Context cancelled, stopping fetcherProxyRoutine processing")
+			close(toCheckerRoutine)
+			return
 		}
 	}
 }
