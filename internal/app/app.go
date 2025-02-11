@@ -53,8 +53,9 @@ func Run(log *slog.Logger, cfg *config.Config) {
 	wg.Add(1)
 	go infoService.StartInfoRoutine(ctx, cfg.InfoRoutineCount, &wg)
 
+	nextService := service.NewNextService(storage)
 	proxyService := service.NewProxy(storage)
-	handler := handler.NewHandler(ctx, log, proxyService, statsService)
+	handler := handler.NewHandler(ctx, log, proxyService, statsService, nextService)
 
 	r := router.New(handler)
 

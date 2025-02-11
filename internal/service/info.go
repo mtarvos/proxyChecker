@@ -89,8 +89,6 @@ func (i *InfoService) infoRoutine(ctx context.Context, forInfo <-chan entity.Pro
 		forUpdateInfo <- proxyItem
 	}
 	close(forUpdateInfo)
-
-	//i.log.Info("Context cancelled, stopping infoRoutine processing")
 }
 
 func (i *InfoService) updateProxyInfo(ctx context.Context, forUpdateInfo <-chan entity.ProxyItem, wg *sync.WaitGroup) {
@@ -106,8 +104,6 @@ func (i *InfoService) updateProxyInfo(ctx context.Context, forUpdateInfo <-chan 
 			i.log.Error("can not update info for ip", slog.String("ip", proxyItem.IP), slog.String("fn", fn), slog.String("error", err.Error()))
 		}
 	}
-
-	//i.log.Info("Context cancelled, stopping updateProxyInfo processing")
 }
 
 func (i *InfoService) fetcherProxyRoutine(ctx context.Context, forInfo chan<- entity.ProxyItem, wg *sync.WaitGroup) {
@@ -137,7 +133,6 @@ func (i *InfoService) fetcherProxyRoutine(ctx context.Context, forInfo chan<- en
 				forInfo <- item
 			}
 		case <-ctx.Done():
-			//i.log.Info("Context cancelled, stopping fetcherProxyRoutine processing")
 			close(forInfo)
 			return
 		}

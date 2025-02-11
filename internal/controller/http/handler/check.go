@@ -17,7 +17,7 @@ func proxyCheckerResponse(ip string, info string, status string) entity.ProxyChe
 	return entity.ProxyCheckerResponse{Status: status, Info: info, IP: ip}
 }
 
-func (p *Handler) Check() http.HandlerFunc {
+func (h *Handler) Check() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		const fn = "handler.check"
 

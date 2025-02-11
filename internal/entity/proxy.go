@@ -29,6 +29,8 @@ type Filters struct {
 	OutIP   *StringFilter
 	Page    int
 	Limit   int
+	Format  string
+	Label   string
 }
 
 type StringFilter struct {

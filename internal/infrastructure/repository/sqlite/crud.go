@@ -32,7 +32,7 @@ func (s *Storage) GetProxy(ctx context.Context, filter entity.Filters) ([]entity
 	var proxyList []entity.ProxyItem
 	err = s.db.SelectContext(ctx, &proxyList, query, args...)
 	if err != nil {
-		return nil, fmt.Errorf("%s query: %s", fn, err)
+		return nil, fmt.Errorf("%s query: %w", fn, err)
 	}
 
 	return proxyList, nil

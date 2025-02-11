@@ -6,9 +6,9 @@ import (
 	"proxyChecker/internal/controller/http/middleware"
 )
 
-func (h *Handler) Proxy() http.HandlerFunc {
+func (h *Handler) Next() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		const fn = "handler.proxy"
+		const fn = "handler.next"
 
 		log := h.log.With(
 			slog.String("request_id", middleware.GetReqID(r.Context())),
@@ -22,7 +22,10 @@ func (h *Handler) Proxy() http.HandlerFunc {
 			return
 		}
 
-		proxyList, err := h.proxyService.GetProxyList(h.ctx, filter)
+		filter.Page = 0
+		filter.Format = "json"
+
+		proxyList, err := h.nextService.GetNextProxy(h.ctx, filter)
 		if err != nil {
 			log.Error(err.Error())
 			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
