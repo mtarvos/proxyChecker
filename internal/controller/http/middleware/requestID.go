@@ -76,10 +76,20 @@ func (m *Middleware) RequestID(next http.Handler) http.Handler {
 			requestID = fmt.Sprintf("%s-%06d", prefix, myid)
 		}
 
-		log := logging.NewLogger(slog.HandlerOptions{
-			Level:     slog.LevelDebug,
-			AddSource: false,
-		}, false)
+		debug := r.URL.Query().Get("debug")
+		var log *slog.Logger
+		if debug != "" {
+			requestID = debug
+			log = logging.NewLogger(slog.HandlerOptions{
+				Level:     slog.LevelDebug,
+				AddSource: false,
+			}, false)
+		} else {
+			log = logging.NewLogger(slog.HandlerOptions{
+				Level:     slog.LevelInfo,
+				AddSource: false,
+			}, false)
+		}
 		log = log.With(slog.String("request_id", requestID))
 		ctx = logging.ContextWithLogger(ctx, log)
 
