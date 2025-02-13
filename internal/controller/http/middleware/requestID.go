@@ -80,15 +80,9 @@ func (m *Middleware) RequestID(next http.Handler) http.Handler {
 		var log *slog.Logger
 		if debug != "" {
 			requestID = debug
-			log = logging.NewLogger(slog.HandlerOptions{
-				Level:     slog.LevelDebug,
-				AddSource: false,
-			}, false)
+			log = logging.InitLogger(m.Env)
 		} else {
-			log = logging.NewLogger(slog.HandlerOptions{
-				Level:     slog.LevelInfo,
-				AddSource: false,
-			}, false)
+			log = slog.Default()
 		}
 		log = log.With(slog.String("request_id", requestID))
 		ctx = logging.ContextWithLogger(ctx, log)

@@ -1,18 +1,17 @@
 package middleware
 
 import (
-	"log/slog"
 	"net/http"
 )
 
 type FuncMiddleware func(http.Handler) http.Handler
 
 type Middleware struct {
-	log *slog.Logger
+	Env string
 }
 
-func NewMiddleware(log *slog.Logger) *Middleware {
-	return &Middleware{log: log}
+func NewMiddleware(env string) *Middleware {
+	return &Middleware{Env: env}
 }
 
 func (m *Middleware) GetStack() FuncMiddleware {

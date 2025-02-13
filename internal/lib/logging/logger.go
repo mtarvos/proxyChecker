@@ -18,26 +18,23 @@ const (
 func InitLogger(env string) *slog.Logger {
 	switch env {
 	case envLocal, envDev:
-		return NewLogger(slog.HandlerOptions{
-			Level:     slog.LevelDebug,
-			AddSource: false,
-		}, false)
+		return NewLogger(slog.LevelDebug, false, false)
 	default:
-		return NewLogger(slog.HandlerOptions{
-			Level:     slog.LevelInfo,
-			AddSource: true,
-		}, false)
+		return NewLogger(slog.LevelInfo, true, true)
 	}
 }
 
-func NewLogger(options slog.HandlerOptions, isJSON bool) *slog.Logger {
+func NewLogger(level slog.Level, addSource bool, isJSON bool) *slog.Logger {
 	var logger *slog.Logger
 	if isJSON {
-		logger = slog.New(slog.NewJSONHandler(os.Stdout, &options))
+		logger = slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{
+			Level:     level,
+			AddSource: addSource,
+		}))
 	} else {
 		logger = slog.New(tint.NewHandler(colorable.NewColorable(os.Stdout), &tint.Options{
-			Level:      options.Level,
-			AddSource:  options.AddSource,
+			Level:      level,
+			AddSource:  addSource,
 			TimeFormat: time.DateTime,
 		}))
 	}
