@@ -12,8 +12,8 @@ import (
 	"proxyChecker/internal/controller/http/middleware"
 	"proxyChecker/internal/infrastructure/client"
 	"proxyChecker/internal/infrastructure/repository/sqlite"
+	"proxyChecker/internal/lib/logging"
 	"proxyChecker/internal/service"
-	"proxyChecker/pkg/logging"
 	"sync"
 	"time"
 )

@@ -2,7 +2,7 @@ package handler
 
 import (
 	"net/http"
-	"proxyChecker/pkg/logging"
+	"proxyChecker/internal/lib/logging"
 )
 
 func (h *Handler) Proxy() http.HandlerFunc {

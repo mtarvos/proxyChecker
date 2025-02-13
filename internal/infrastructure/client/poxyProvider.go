@@ -7,7 +7,7 @@ import (
 	"net"
 	"proxyChecker/internal/entity"
 	"proxyChecker/internal/lib/helpers"
-	"proxyChecker/pkg/logging"
+	"proxyChecker/internal/lib/logging"
 	"strconv"
 	"strings"
 )

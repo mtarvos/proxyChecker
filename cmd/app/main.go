@@ -4,7 +4,7 @@ import (
 	"log/slog"
 	"proxyChecker/internal/app"
 	"proxyChecker/internal/config"
-	"proxyChecker/pkg/logging"
+	"proxyChecker/internal/lib/logging"
 )
 
 func main() {

@@ -5,7 +5,7 @@ import (
 	"errors"
 	"log/slog"
 	"proxyChecker/internal/entity"
-	"proxyChecker/pkg/logging"
+	"proxyChecker/internal/lib/logging"
 	"sync"
 	"time"
 )
