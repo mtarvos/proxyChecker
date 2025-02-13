@@ -3,7 +3,7 @@ package middleware
 import (
 	"log/slog"
 	"net/http"
-	"proxyChecker/pkg/logging"
+	"proxyChecker/internal/lib/logging"
 	"time"
 )
 

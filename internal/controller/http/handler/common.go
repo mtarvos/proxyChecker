@@ -8,10 +8,9 @@ import (
 	"proxyChecker/internal/controller/http/templates"
 	"proxyChecker/internal/entity"
 	"proxyChecker/internal/lib/helpers"
+	"proxyChecker/internal/lib/logging"
 	"strconv"
 	textTemplate "text/template"
-
-	"proxyChecker/pkg/logging"
 )
 
 type PageData struct {

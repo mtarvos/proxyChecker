@@ -11,7 +11,7 @@ import (
 	"log/slog"
 	"net/http"
 	"os"
-	"proxyChecker/pkg/logging"
+	"proxyChecker/internal/lib/logging"
 	"strings"
 	"sync/atomic"
 )
