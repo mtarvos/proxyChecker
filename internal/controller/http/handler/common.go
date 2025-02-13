@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"context"
 	"fmt"
 	htmlTemplate "html/template"
 	"net/http"
@@ -86,7 +87,7 @@ func (h *Handler) parseQueryParamsToFilter(r *http.Request) (entity.Filters, err
 	return filter, nil
 }
 
-func (h *Handler) prepareResultWithFormat(w http.ResponseWriter, filter entity.Filters, proxyList []entity.ProxyItem) {
+func (h *Handler) prepareResultWithFormat(ctx context.Context, w http.ResponseWriter, filter entity.Filters, proxyList []entity.ProxyItem) {
 	if filter.Format == "json" {
 		helpers.JSON(w, proxyList, http.StatusOK)
 		return
@@ -101,7 +102,7 @@ func (h *Handler) prepareResultWithFormat(w http.ResponseWriter, filter entity.F
 		return
 	}
 
-	totalItems, err := h.proxyService.GetTotalCountByFilter(h.ctx, filter)
+	totalItems, err := h.proxyService.GetTotalCountByFilter(ctx, filter)
 	if err != nil {
 		h.log.Error(err.Error())
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)

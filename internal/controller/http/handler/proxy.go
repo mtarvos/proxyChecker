@@ -22,13 +22,13 @@ func (h *Handler) Proxy() http.HandlerFunc {
 			return
 		}
 
-		proxyList, err := h.proxyService.GetProxyList(h.ctx, filter)
+		proxyList, err := h.proxyService.GetProxyList(r.Context(), filter)
 		if err != nil {
 			log.Error(err.Error())
 			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 			return
 		}
 
-		h.prepareResultWithFormat(w, filter, proxyList)
+		h.prepareResultWithFormat(r.Context(), w, filter, proxyList)
 	}
 }

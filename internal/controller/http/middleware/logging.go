@@ -22,11 +22,12 @@ func (m *Middleware) Logging(next http.Handler) http.Handler {
 		wrapped := &wrappedWriter{ResponseWriter: w, statusCode: http.StatusOK}
 		next.ServeHTTP(wrapped, r)
 
-		m.log.Info(
+		m.log.InfoContext(
+			r.Context(),
 			r.Method,
 			slog.String("path", r.URL.Path),
 			slog.Duration("time", time.Since(start)),
 			slog.Int("status", wrapped.statusCode),
-			slog.String("request_id", GetReqID(r.Context())))
+		)
 	})
 }

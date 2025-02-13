@@ -55,7 +55,7 @@ func Run(log *slog.Logger, cfg *config.Config) {
 
 	nextService := service.NewNextService(storage)
 	proxyService := service.NewProxy(storage)
-	handler := handler.NewHandler(ctx, log, proxyService, statsService, nextService)
+	handler := handler.NewHandler(log, proxyService, statsService, nextService)
 
 	r := router.New(handler)
 

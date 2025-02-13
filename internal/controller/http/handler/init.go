@@ -7,7 +7,6 @@ import (
 )
 
 type Handler struct {
-	ctx          context.Context
 	log          *slog.Logger
 	proxyService ProxyService
 	statsService StatsService
@@ -23,8 +22,8 @@ type StatsService interface {
 	GetStats(ctx context.Context) (entity.StatsData, error)
 }
 
-func NewHandler(ctx context.Context, log *slog.Logger, proxyService ProxyService, statsService StatsService, nextService NextService) *Handler {
-	return &Handler{ctx: ctx, log: log, proxyService: proxyService, statsService: statsService, nextService: nextService}
+func NewHandler(log *slog.Logger, proxyService ProxyService, statsService StatsService, nextService NextService) *Handler {
+	return &Handler{log: log, proxyService: proxyService, statsService: statsService, nextService: nextService}
 }
 
 type NextService interface {

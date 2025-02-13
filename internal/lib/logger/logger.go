@@ -6,6 +6,7 @@ import (
 	"github.com/mattn/go-colorable"
 	"log/slog"
 	"os"
+	MLogger "proxyChecker/pkg/mLogger"
 	"time"
 )
 
@@ -20,9 +21,10 @@ func InitLogger(env string, logFile string) *slog.Logger {
 
 	switch env {
 	case envLocal, envDev:
-		colorTextHandler := tint.NewHandler(colorable.NewColorable(os.Stdout), &tint.Options{
+		colorTextHandler := MLogger.NewMHandler(colorable.NewColorable(os.Stdout), &tint.Options{
 			Level:      slog.LevelDebug,
 			TimeFormat: time.DateTime,
+			AddSource:  true,
 		})
 
 		if logFile != "" {
@@ -52,6 +54,7 @@ func newFileHandler(fileName string, level slog.Level) slog.Handler {
 	}
 
 	return slog.NewTextHandler(file, &slog.HandlerOptions{
-		Level: level,
+		Level:     level,
+		AddSource: true,
 	})
 }
