@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"log/slog"
 	"proxyChecker/internal/entity"
 	"proxyChecker/internal/lib/helpers"
 )
@@ -66,13 +65,12 @@ type Connection struct {
 }
 
 type AbstractAPI struct {
-	log        *slog.Logger
 	getInfoURL string
 	getInfoKey string
 }
 
-func NewAbstractAPI(log *slog.Logger, getInfoURL string, getInfoKey string) *AbstractAPI {
-	return &AbstractAPI{log: log, getInfoURL: getInfoURL, getInfoKey: getInfoKey}
+func NewAbstractAPI(getInfoURL string, getInfoKey string) *AbstractAPI {
+	return &AbstractAPI{getInfoURL: getInfoURL, getInfoKey: getInfoKey}
 }
 
 func (a *AbstractAPI) getFullURL(url string, key string, ip string) (string, error) {

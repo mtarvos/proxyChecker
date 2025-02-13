@@ -4,12 +4,12 @@ import (
 	"log/slog"
 	"proxyChecker/internal/app"
 	"proxyChecker/internal/config"
-	"proxyChecker/internal/lib/logger"
+	"proxyChecker/pkg/logging"
 )
 
 func main() {
 	cfg := config.MustLoad()
-	log := logger.InitLogger(cfg.Env, cfg.LogFile)
+	log := logging.InitLogger(cfg.Env)
 
 	log.Info("Starting proxy checker", slog.String("env", cfg.Env))
 

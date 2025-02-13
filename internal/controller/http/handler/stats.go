@@ -4,18 +4,16 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
-	"proxyChecker/internal/controller/http/middleware"
 	"proxyChecker/internal/entity"
 	"proxyChecker/internal/lib/helpers"
+	"proxyChecker/pkg/logging"
 	"strings"
 )
 
 func (h *Handler) Stats() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		const fn = "handler.Stats"
-
-		log := h.log.With(
-			slog.String("request_id", middleware.GetReqID(r.Context())),
+		log := logging.L(r.Context()).With(
 			slog.String("fn", fn),
 		)
 

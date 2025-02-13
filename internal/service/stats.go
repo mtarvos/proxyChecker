@@ -3,13 +3,11 @@ package service
 import (
 	"context"
 	"fmt"
-	"log/slog"
 	"proxyChecker/internal/entity"
 	"proxyChecker/internal/lib/helpers"
 )
 
 type StatsService struct {
-	log      *slog.Logger
 	provider StatsProvider
 }
 
@@ -18,8 +16,8 @@ type StatsProvider interface {
 	GetDistinctField(ctx context.Context, fieldName string, filter entity.Filters) ([]string, error)
 }
 
-func NewStatsService(log *slog.Logger, statsProvider StatsProvider) *StatsService {
-	return &StatsService{log: log, provider: statsProvider}
+func NewStatsService(statsProvider StatsProvider) *StatsService {
+	return &StatsService{provider: statsProvider}
 }
 
 func (s *StatsService) GetStats(ctx context.Context) (entity.StatsData, error) {

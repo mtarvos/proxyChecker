@@ -5,6 +5,7 @@ import (
 	"errors"
 	"log/slog"
 	"proxyChecker/internal/entity"
+	"proxyChecker/pkg/logging"
 	"sync"
 	"time"
 )
@@ -12,7 +13,6 @@ import (
 type CheckerService struct {
 	checkerClient CheckerClient
 	storage       ProxyStorage
-	log           *slog.Logger
 }
 
 type aliveStatus struct {
@@ -35,12 +35,16 @@ type ProxyStorage interface {
 	GetProxy(ctx context.Context, filter entity.Filters) ([]entity.ProxyItem, error)
 }
 
-func NewCheckerService(log *slog.Logger, storage ProxyStorage, checkerClient CheckerClient) *CheckerService {
-	return &CheckerService{log: log, storage: storage, checkerClient: checkerClient}
+func NewCheckerService(storage ProxyStorage, checkerClient CheckerClient) *CheckerService {
+	return &CheckerService{storage: storage, checkerClient: checkerClient}
 }
 
 func (c *CheckerService) StartCheckerRoutine(ctx context.Context, routineCount int, checkerWG *sync.WaitGroup) {
 	defer checkerWG.Done()
+	log := logging.L(ctx).With(
+		slog.String("routine", "Checker"),
+	)
+	ctx = logging.ContextWithLogger(ctx, log)
 
 	var wg sync.WaitGroup
 
@@ -57,22 +61,23 @@ func (c *CheckerService) StartCheckerRoutine(ctx context.Context, routineCount i
 	}
 
 	wg.Wait()
-	c.log.Info("All Checker goroutine completed")
+	log.Info("All Checker goroutine completed")
 }
 
 func (c *CheckerService) checkerRoutine(ctx context.Context, forCheckAlive <-chan entity.ProxyItem, forSetAlive chan<- entity.ProxyItem, wg *sync.WaitGroup) {
 	defer wg.Done()
+	log := logging.L(ctx)
 
 	const fn = "CheckerService.checkerRoutine"
 	for proxyItem := range forCheckAlive {
-		c.log.Info("Check proxy", slog.String("ip", proxyItem.IP), slog.Int("port", proxyItem.Port))
+		log.Info("Check proxy", slog.String("ip", proxyItem.IP), slog.Int("port", proxyItem.Port))
 
 		outIP, err := c.checkerClient.Check(ctx, proxyItem)
 		if err != nil {
 			if errors.Is(err, context.Canceled) {
 				continue
 			}
-			c.log.Warn(
+			log.Warn(
 				"can not check proxy or proxy is dead!",
 				slog.String("fn", fn),
 				slog.String("error", err.Error()),
@@ -90,7 +95,7 @@ func (c *CheckerService) checkerRoutine(ctx context.Context, forCheckAlive <-cha
 			proxyItem.OutIP.Scan(outIP)
 			proxyItem.Alive.Scan(2)
 
-			c.log.Info(
+			log.Info(
 				"Proxy is alive!",
 				slog.String("ip", proxyItem.IP),
 				slog.Int("port", proxyItem.Port),
@@ -106,23 +111,23 @@ func (c *CheckerService) checkerRoutine(ctx context.Context, forCheckAlive <-cha
 
 func (c *CheckerService) setProxyAliveStatus(ctx context.Context, forSetAlive <-chan entity.ProxyItem, wg *sync.WaitGroup) {
 	defer wg.Done()
-
 	const fn = "CheckerService.saverProxyAlive"
+	log := logging.L(ctx)
 
 	for proxyItem := range forSetAlive {
 		if err := c.storage.SetAlive(ctx, proxyItem); err != nil {
 			if errors.Is(err, context.Canceled) {
 				continue
 			}
-			c.log.Error("can not set Alive for proxy", slog.String("fn", fn), slog.String("error", err.Error()))
+			log.Error("can not set Alive for proxy", slog.String("fn", fn), slog.String("error", err.Error()))
 		}
 	}
 }
 
 func (c *CheckerService) fetcherProxyRoutine(ctx context.Context, toCheckerRoutine chan<- entity.ProxyItem, wg *sync.WaitGroup) {
 	defer wg.Done()
-
 	const fn = "CheckerService.fetcherProxyRoutine"
+	log := logging.L(ctx)
 
 	ticker := time.NewTicker(time.Minute)
 	defer ticker.Stop()
@@ -135,7 +140,7 @@ func (c *CheckerService) fetcherProxyRoutine(ctx context.Context, toCheckerRouti
 				if errors.Is(err, context.Canceled) {
 					continue
 				}
-				c.log.Error("can not get proxy list for checking", slog.String("fn", fn), slog.String("error", err.Error()))
+				log.Error("can not get proxy list for checking", slog.String("fn", fn), slog.String("error", err.Error()))
 				continue
 			}
 
@@ -146,7 +151,7 @@ func (c *CheckerService) fetcherProxyRoutine(ctx context.Context, toCheckerRouti
 				toCheckerRoutine <- item
 			}
 		case <-ctx.Done():
-			c.log.Info("Context cancelled, stopping fetcherProxyRoutine processing")
+			log.Info("Context cancelled, stopping fetcherProxyRoutine processing")
 			close(toCheckerRoutine)
 			return
 		}

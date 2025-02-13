@@ -10,6 +10,8 @@ import (
 	"proxyChecker/internal/lib/helpers"
 	"strconv"
 	textTemplate "text/template"
+
+	"proxyChecker/pkg/logging"
 )
 
 type PageData struct {
@@ -88,6 +90,7 @@ func (h *Handler) parseQueryParamsToFilter(r *http.Request) (entity.Filters, err
 }
 
 func (h *Handler) prepareResultWithFormat(ctx context.Context, w http.ResponseWriter, filter entity.Filters, proxyList []entity.ProxyItem) {
+	log := logging.L(ctx)
 	if filter.Format == "json" {
 		helpers.JSON(w, proxyList, http.StatusOK)
 		return
@@ -97,21 +100,21 @@ func (h *Handler) prepareResultWithFormat(ctx context.Context, w http.ResponseWr
 	if filter.Format == "text" {
 		if err = h.ProxyListTEXT(w, templates.TEXTProxyList, proxyList, http.StatusOK); err != nil {
 			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
-			h.log.Error(err.Error())
+			log.Error(err.Error())
 		}
 		return
 	}
 
 	totalItems, err := h.proxyService.GetTotalCountByFilter(ctx, filter)
 	if err != nil {
-		h.log.Error(err.Error())
+		log.Error(err.Error())
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 		return
 	}
 
 	if err = h.ProxyListHTML(w, templates.HTMLProxyList, proxyList, filter.Page, filter.Limit, totalItems, http.StatusOK); err != nil {
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
-		h.log.Error(err.Error())
+		log.Error(err.Error())
 		return
 	}
 }

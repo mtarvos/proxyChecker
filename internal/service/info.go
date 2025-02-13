@@ -5,6 +5,7 @@ import (
 	"errors"
 	"log/slog"
 	"proxyChecker/internal/entity"
+	"proxyChecker/pkg/logging"
 	"sync"
 	"time"
 )
@@ -12,7 +13,6 @@ import (
 type InfoService struct {
 	infoProvider InfoProvider
 	infoRep      InfoRep
-	log          *slog.Logger
 }
 
 type InfoProvider interface {
@@ -24,12 +24,16 @@ type InfoRep interface {
 	GetProxyListForInfo(ctx context.Context) ([]entity.ProxyItem, error)
 }
 
-func NewInfoService(log *slog.Logger, infoProvider InfoProvider, infoRep InfoRep) *InfoService {
-	return &InfoService{log: log, infoProvider: infoProvider, infoRep: infoRep}
+func NewInfoService(infoProvider InfoProvider, infoRep InfoRep) *InfoService {
+	return &InfoService{infoProvider: infoProvider, infoRep: infoRep}
 }
 
 func (i *InfoService) StartInfoRoutine(ctx context.Context, routineCount int, infoWG *sync.WaitGroup) {
 	defer infoWG.Done()
+	log := logging.L(ctx).With(
+		slog.String("routine", "Info"),
+	)
+	ctx = logging.ContextWithLogger(ctx, log)
 
 	var wg sync.WaitGroup
 
@@ -47,23 +51,23 @@ func (i *InfoService) StartInfoRoutine(ctx context.Context, routineCount int, in
 	}
 
 	wg.Wait()
-	i.log.Info("All info goroutine completed")
+	log.Info("All info goroutine completed")
 }
 
 func (i *InfoService) infoRoutine(ctx context.Context, forInfo <-chan entity.ProxyItem, forUpdateInfo chan<- entity.ProxyItem, wg *sync.WaitGroup) {
 	defer wg.Done()
-
 	const fn = "InfoService.infoRoutine"
+	log := logging.L(ctx)
 
 	for proxyItem := range forInfo {
-		i.log.Info("Get info", slog.String("ip", proxyItem.OutIP.String))
+		log.Info("Get info", slog.String("ip", proxyItem.OutIP.String))
 
 		info, err := i.infoProvider.GetInfo(ctx, proxyItem.OutIP.String)
 		if err != nil {
 			if errors.Is(err, context.Canceled) {
 				continue
 			}
-			i.log.Error(
+			log.Error(
 				"Can not get info",
 				slog.String("fn", fn),
 				slog.String("error", err.Error()),
@@ -77,7 +81,7 @@ func (i *InfoService) infoRoutine(ctx context.Context, forInfo <-chan entity.Pro
 		proxyItem.ISP.Scan(info.ISP)
 		proxyItem.Timezone.Scan(info.Timezone)
 
-		i.log.Info(
+		log.Info(
 			"Get info success!",
 			slog.String("ip", proxyItem.OutIP.String),
 			slog.String("Country", proxyItem.Country.String),
@@ -93,23 +97,23 @@ func (i *InfoService) infoRoutine(ctx context.Context, forInfo <-chan entity.Pro
 
 func (i *InfoService) updateProxyInfo(ctx context.Context, forUpdateInfo <-chan entity.ProxyItem, wg *sync.WaitGroup) {
 	defer wg.Done()
-
 	const fn = "InfoService.updateProxyInfo"
+	log := logging.L(ctx)
 
 	for proxyItem := range forUpdateInfo {
 		if err := i.infoRep.UpdateProxyInfo(ctx, proxyItem); err != nil {
 			if errors.Is(err, context.Canceled) {
 				continue
 			}
-			i.log.Error("can not update info for ip", slog.String("ip", proxyItem.IP), slog.String("fn", fn), slog.String("error", err.Error()))
+			log.Error("can not update info for ip", slog.String("ip", proxyItem.IP), slog.String("fn", fn), slog.String("error", err.Error()))
 		}
 	}
 }
 
 func (i *InfoService) fetcherProxyRoutine(ctx context.Context, forInfo chan<- entity.ProxyItem, wg *sync.WaitGroup) {
 	defer wg.Done()
-
 	const fn = "InfoService.fetcherProxyRoutine"
+	log := logging.L(ctx)
 
 	ticker := time.NewTicker(time.Minute)
 	defer ticker.Stop()
@@ -122,7 +126,7 @@ func (i *InfoService) fetcherProxyRoutine(ctx context.Context, forInfo chan<- en
 				if errors.Is(err, context.Canceled) {
 					continue
 				}
-				i.log.Error("can not get proxy list for get info", slog.String("fn", fn), slog.String("error", err.Error()))
+				log.Error("can not get proxy list for get info", slog.String("fn", fn), slog.String("error", err.Error()))
 				continue
 			}
 

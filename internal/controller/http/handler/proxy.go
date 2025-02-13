@@ -1,19 +1,14 @@
 package handler
 
 import (
-	"log/slog"
 	"net/http"
-	"proxyChecker/internal/controller/http/middleware"
+	"proxyChecker/pkg/logging"
 )
 
 func (h *Handler) Proxy() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		const fn = "handler.proxy"
-
-		log := h.log.With(
-			slog.String("request_id", middleware.GetReqID(r.Context())),
-			slog.String("fn", fn),
-		)
+		log := logging.L(r.Context())
 
 		filter, err := h.parseQueryParamsToFilter(r)
 		if err != nil {

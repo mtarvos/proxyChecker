@@ -2,12 +2,10 @@ package handler
 
 import (
 	"context"
-	"log/slog"
 	"proxyChecker/internal/entity"
 )
 
 type Handler struct {
-	log          *slog.Logger
 	proxyService ProxyService
 	statsService StatsService
 	nextService  NextService
@@ -22,8 +20,8 @@ type StatsService interface {
 	GetStats(ctx context.Context) (entity.StatsData, error)
 }
 
-func NewHandler(log *slog.Logger, proxyService ProxyService, statsService StatsService, nextService NextService) *Handler {
-	return &Handler{log: log, proxyService: proxyService, statsService: statsService, nextService: nextService}
+func NewHandler(proxyService ProxyService, statsService StatsService, nextService NextService) *Handler {
+	return &Handler{proxyService: proxyService, statsService: statsService, nextService: nextService}
 }
 
 type NextService interface {

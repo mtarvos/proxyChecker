@@ -13,11 +13,17 @@ import (
 	"proxyChecker/internal/infrastructure/client"
 	"proxyChecker/internal/infrastructure/repository/sqlite"
 	"proxyChecker/internal/service"
+	"proxyChecker/pkg/logging"
 	"sync"
 	"time"
 )
 
 func Run(log *slog.Logger, cfg *config.Config) {
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	ctx = logging.ContextWithLogger(ctx, log)
+
 	storage, err := sqlite.New(cfg.StoragePath, log)
 	if err != nil {
 		log.Error("Failed to init storage", "error", err.Error())
@@ -31,31 +37,28 @@ func Run(log *slog.Logger, cfg *config.Config) {
 		os.Exit(1)
 	}
 
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-
 	var wg sync.WaitGroup
 
-	proxyProvider := client.NewProxyProvider(log)
-	updater := service.NewUpdaterService(log, cfg.ProxyUpdateURL, proxyProvider, storage)
+	proxyProvider := client.NewProxyProvider()
+	updater := service.NewUpdaterService(cfg.ProxyUpdateURL, proxyProvider, storage)
 	wg.Add(1)
 	updater.StartUpdateProxyRoutine(ctx, &wg)
 
-	statsService := service.NewStatsService(log, storage)
+	statsService := service.NewStatsService(storage)
 
-	checkerClient := client.NewChecker(log, cfg.CheckerURL, cfg.ProxyType)
-	checkService := service.NewCheckerService(log, storage, checkerClient)
+	checkerClient := client.NewChecker(cfg.CheckerURL, cfg.ProxyType)
+	checkService := service.NewCheckerService(storage, checkerClient)
 	wg.Add(1)
 	go checkService.StartCheckerRoutine(ctx, cfg.CheckRoutineCount, &wg)
 
-	infoClient := client.NewAbstractAPI(log, cfg.InfoURL, cfg.Key)
-	infoService := service.NewInfoService(log, infoClient, storage)
+	infoClient := client.NewAbstractAPI(cfg.InfoURL, cfg.Key)
+	infoService := service.NewInfoService(infoClient, storage)
 	wg.Add(1)
 	go infoService.StartInfoRoutine(ctx, cfg.InfoRoutineCount, &wg)
 
 	nextService := service.NewNextService(storage)
 	proxyService := service.NewProxy(storage)
-	handler := handler.NewHandler(log, proxyService, statsService, nextService)
+	handler := handler.NewHandler(proxyService, statsService, nextService)
 
 	r := router.New(handler)
 

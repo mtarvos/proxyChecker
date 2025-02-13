@@ -4,20 +4,18 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"log/slog"
 	"net/http"
 	"proxyChecker/internal/entity"
 	"proxyChecker/internal/lib/helpers"
 )
 
 type Checker struct {
-	log        *slog.Logger
 	checkerURL string
 	proxyType  entity.Status
 }
 
-func NewChecker(log *slog.Logger, checkerURL string, proxyType entity.Status) *Checker {
-	return &Checker{log: log, checkerURL: checkerURL, proxyType: proxyType}
+func NewChecker(checkerURL string, proxyType entity.Status) *Checker {
+	return &Checker{checkerURL: checkerURL, proxyType: proxyType}
 }
 
 func (c *Checker) Check(ctx context.Context, proxyItem entity.ProxyItem) (string, error) {

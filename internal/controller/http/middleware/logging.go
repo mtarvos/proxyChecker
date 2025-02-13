@@ -3,6 +3,7 @@ package middleware
 import (
 	"log/slog"
 	"net/http"
+	"proxyChecker/pkg/logging"
 	"time"
 )
 
@@ -22,8 +23,8 @@ func (m *Middleware) Logging(next http.Handler) http.Handler {
 		wrapped := &wrappedWriter{ResponseWriter: w, statusCode: http.StatusOK}
 		next.ServeHTTP(wrapped, r)
 
-		m.log.InfoContext(
-			r.Context(),
+		log := logging.L(r.Context())
+		log.Info(
 			r.Method,
 			slog.String("path", r.URL.Path),
 			slog.Duration("time", time.Since(start)),

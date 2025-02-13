@@ -11,7 +11,7 @@ import (
 	"log/slog"
 	"net/http"
 	"os"
-	MLogger "proxyChecker/pkg/mLogger"
+	"proxyChecker/pkg/logging"
 	"strings"
 	"sync/atomic"
 )
@@ -75,8 +75,14 @@ func (m *Middleware) RequestID(next http.Handler) http.Handler {
 			myid := atomic.AddUint64(&reqid, 1)
 			requestID = fmt.Sprintf("%s-%06d", prefix, myid)
 		}
-		//ctx = context.WithValue(ctx, RequestIDKey, requestID)
-		ctx = MLogger.AppendCtx(ctx, slog.String("request_id", requestID))
+
+		log := logging.NewLogger(slog.HandlerOptions{
+			Level:     slog.LevelDebug,
+			AddSource: false,
+		}, false)
+		log = log.With(slog.String("request_id", requestID))
+		ctx = logging.ContextWithLogger(ctx, log)
+
 		next.ServeHTTP(w, r.WithContext(ctx))
 	}
 	return http.HandlerFunc(fn)
